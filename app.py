@@ -90,7 +90,7 @@ st.sidebar.subheader("3. Información de Reserva")
 
 monto_reserva = st.sidebar.selectbox(
     "Monto de Reserva ($)",
-    [100, 200, 300, 400, 500]
+    [100, 200, 300, 400, 500, 600, 800, 900, 1000]
 )
 
 tiempo_reserva_dias = st.sidebar.slider(
