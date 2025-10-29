@@ -289,7 +289,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
         'cliente_genero': cliente_genero,
         'cliente_profesion': cliente_profesion,
         'cliente_distrito': cliente_distrito,
-        'SALARIO_APROX': SALARIO_APROX,
+        'SALARIO_DECLARADO': SALARIO_DECLARADO,
         'n_visitas': n_visitas,
         'canal_contacto': canal_contacto,
         'asesor': asesor,
