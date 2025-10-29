@@ -257,7 +257,7 @@ def preprocess_input(data):
 
         # Escalar variables numéricas
         numeric_cols = ['metros_cuadrados', 'monto_reserva', 'lote_precio_total',
-                       'tiempo_reserva_dias', 'SALARIO_APROX', 'n_visitas',
+                       'tiempo_reserva_dias', 'SALARIO_DECLARADO', 'n_visitas',
                        'ratio_reserva_precio', 'dias_hasta_limite', 'precio_m2']
 
         # Filtrar solo las que existen
