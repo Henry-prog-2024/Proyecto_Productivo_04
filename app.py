@@ -21,7 +21,7 @@ st.markdown("---")
 def load_model():
     try:
         # En Colab, los archivos están en el directorio actual
-        model = joblib.load('mejor_modelo_balanceado.pkl')
+        model = joblib.load('mejor_modelo.pkl')
         scaler = joblib.load('scaler.pkl')
         columnas = joblib.load('columnas_modelo.pkl')
 
