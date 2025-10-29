@@ -139,7 +139,7 @@ cliente_distrito = st.sidebar.selectbox(
     ['Distrito_A', 'Distrito_B', 'Distrito_C', 'Distrito_D', 'Distrito_E']
 )
 
-SALARIO_APROX = st.sidebar.selectbox(
+SALARIO_DECLARADO = st.sidebar.selectbox(
     "Salario Aproximado ($)",
     [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000]
 )
