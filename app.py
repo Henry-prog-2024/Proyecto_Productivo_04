@@ -101,13 +101,13 @@ tiempo_reserva_dias = st.sidebar.slider(
     step=1
 )
 
-dias_hasta_limite = st.sidebar.slider(
-    "Días hasta Fecha Límite",
-    min_value=1,
-    max_value=30,
-    value=30,
-    step=1
-)
+#dias_hasta_limite = st.sidebar.slider(
+ #   "Días hasta Fecha Límite",
+  #  min_value=1,
+   # max_value=30,
+    #value=30,
+    #step=1
+#)
 
 metodo_pago = st.sidebar.selectbox(
     "Método de Pago",
