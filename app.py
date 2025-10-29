@@ -96,8 +96,8 @@ monto_reserva = st.sidebar.selectbox(
 tiempo_reserva_dias = st.sidebar.slider(
     "Tiempo de Reserva (días)",
     min_value=1,
-    max_value=730,
-    value=180,
+    max_value=30,
+    value=7,
     step=1
 )
 
