@@ -339,7 +339,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
 
             with col3:
                 st.info("**Factores Positivos:**")
-                if monto_reserva == 500:
+                if monto_reserva >= 500:
                     st.write("✅ Monto de reserva alto")
                 if n_visitas >= 3:
                     st.write("✅ Múltiples visitas")
