@@ -90,7 +90,7 @@ st.sidebar.subheader("3. Información de Reserva")
 
 monto_reserva = st.sidebar.selectbox(
     "Monto de Reserva ($)",
-    [100, 200, 300, 400, 500, 600, 800, 900, 1000]
+    [500, 600, 800, 900, 1000,2000,5000,10000]
 )
 
 tiempo_reserva_dias = st.sidebar.slider(
@@ -104,7 +104,7 @@ tiempo_reserva_dias = st.sidebar.slider(
 dias_hasta_limite = st.sidebar.slider(
     "Días hasta Fecha Límite",
     min_value=1,
-    max_value=90,
+    max_value=30,
     value=30,
     step=1
 )
@@ -373,7 +373,7 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.metric("Total de Clientes", "100,000")
-    st.metric("Tasa de Conversión", "20%")
+    st.metric("Tasa de Conversión", "50%")
 
 with col2:
     st.metric("Mejor Proyecto", "PROYECTO_3")
