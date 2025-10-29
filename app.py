@@ -345,7 +345,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.write("✅ Múltiples visitas")
                 if DOCUMENTOS == 'Completo':
                     st.write("✅ Documentación completa")
-                if SALARIO_APROX >= 3000:
+                if SALARIO_DECLARADO >= 3000:
                     st.write("✅ Buen nivel de ingresos")
                 if CERCA_AVENIDAS == 'Si':
                     st.write("✅ Cerca de avenidas")
