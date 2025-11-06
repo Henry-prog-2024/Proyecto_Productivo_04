@@ -362,7 +362,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.write("❌ Pocas visitas")
                 if DOCUMENTOS == 'Incompleto':
                     st.write("❌ Documentación incompleta")
-                if tiempo_reserva_dias > 30:
+                if tiempo_reserva_dias >= 31:
                     st.write("❌ Tiempo de reserva muy largo")
                 if SALARIO_DECLARADO < 3000:
                     st.write("❌ Bajo nivel de ingresos")
