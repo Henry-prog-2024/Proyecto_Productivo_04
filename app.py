@@ -347,6 +347,8 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.write("✅ Documentación completa")
                 if SALARIO_DECLARADO >= 3000:
                     st.write("✅ Buen nivel de ingresos")
+                if tiempo_reserva_dias <= 30:
+                    st.write("✅ Tiempo de reserva promedio")
                 if CERCA_AVENIDAS == 'Si':
                     st.write("✅ Cerca de avenidas")
 
@@ -362,12 +364,8 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.write("❌ Documentación incompleta")
                 if tiempo_reserva_dias > 30:
                     st.write("❌ Tiempo de reserva muy largo")
-                if CERCA_COLEGIOS == 'No':
-                    st.write("❌ Lejos de colegios")
                 if SALARIO_DECLARADO < 3000:
                     st.write("❌ Bajo nivel de ingresos")
-                if CERCA_AVENIDAS == 'No':
-                    st.write("❌ Lejos de avenidas")
 
         except Exception as e:
             st.error(f"Error en la predicción: {e}")
