@@ -354,7 +354,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 st.warning("**Factores de Riesgo:**")
                 if monto_reserva < 1000:
                     st.write("❌ Monto de reserva bajo")
-                if n_visitas <= 1:
+                if n_visitas <= 2:
                     st.write("❌ Pocas visitas")
                 if DOCUMENTOS == 'Incompleto':
                     st.write("❌ Documentación incompleta")
