@@ -362,7 +362,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.write("❌ Tiempo de reserva muy largo")
                 if CERCA_COLEGIOS == 'No':
                     st.write("❌ Lejos de colegios")
-                if SALARIO_DECLARADO < 2000:
+                if SALARIO_DECLARADO < 3000:
                     st.write("✅ Bajo nivel de ingresos")
 
         except Exception as e:
