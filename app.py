@@ -366,6 +366,8 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.write("❌ Lejos de colegios")
                 if SALARIO_DECLARADO < 3000:
                     st.write("❌ Bajo nivel de ingresos")
+                if CERCA_AVENIDAS == 'No':
+                    st.write("❌ Lejos de avenidas")
 
         except Exception as e:
             st.error(f"Error en la predicción: {e}")
