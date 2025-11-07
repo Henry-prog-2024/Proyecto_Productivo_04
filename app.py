@@ -306,8 +306,72 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
     if processed_data is not None:
         try:
             # Hacer predicción
-            probabilidad = model.predict_proba(processed_data)[0][1]
-            prediccion = model.predict(processed_data)[0]
+            #probabilidad = model.predict_proba(processed_data)[0][1]
+            #prediccion = model.predict(processed_data)[0]
+                    # =============================
+            # 🔍 PREDICCIÓN Y GUARDADO
+            # =============================
+
+            if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
+
+            # Crear el diccionario de entrada (mantén tus variables originales)
+            input_data = {
+                'proyecto': proyecto,
+                'manzana': manzana,
+                'lote_ubicacion': lote_ubicacion,
+                'metros_cuadrados': metros_cuadrados,
+                'lote_precio_total': lote_precio_total,
+                'monto_reserva': monto_reserva,
+                'tiempo_reserva_dias': tiempo_reserva_dias,
+                'dias_hasta_limite': dias_hasta_limite,
+                'metodo_pago': metodo_pago,
+                'cliente_edad': cliente_edad,
+                'cliente_genero': cliente_genero,
+                'cliente_profesion': cliente_profesion,
+                'cliente_distrito': cliente_distrito,
+                'SALARIO_DECLARADO': SALARIO_DECLARADO,
+                'n_visitas': n_visitas,
+                'canal_contacto': canal_contacto,
+                'asesor': asesor,
+                'promesa_regalo': promesa_regalo,
+                'DOCUMENTOS': DOCUMENTOS,
+                'CERCA_AVENIDAS': CERCA_AVENIDAS,
+                'CERCA_COLEGIOS': CERCA_COLEGIOS,
+                'CERCA_PARQUE': CERCA_PARQUE,
+                'DNI': dni_cliente  # 👈 agregado nuevo
+            }
+
+            processed_data = preprocess_input(input_data)
+
+            if processed_data is not None:
+                # Realizar predicción
+                prob = model.predict_proba(processed_data)[0][1]
+                pred = model.predict(processed_data)[0]
+
+                st.success(f"✅ Predicción completada para el cliente DNI **{dni_cliente}**")
+                st.metric("Probabilidad de Compra", f"{prob*100:.2f}%")
+                st.progress(float(prob))
+
+                # Crear registro completo con todos los datos + resultado
+                registro_completo = input_data.copy()
+                registro_completo["Probabilidad_Compra"] = prob
+                registro_completo["Predicción"] = "COMPRA" if pred == 1 else "NO COMPRA"
+
+                # Convertir en DataFrame
+                df_registro = pd.DataFrame([registro_completo])
+
+                # Guardar en archivo CSV (modo append)
+                archivo_csv = "evaluaciones_clientes.csv"
+                if os.path.exists(archivo_csv):
+                    df_registro.to_csv(archivo_csv, mode='a', header=False, index=False)
+                else:
+                    df_registro.to_csv(archivo_csv, index=False)
+
+                st.success("📁 Evaluación guardada en 'evaluaciones_clientes.csv'")
+
+                # Mostrar datos guardados (opcional)
+                st.dataframe(df_registro)
+
 
             # Mostrar resultados
             st.success("✅ Predicción completada!")
