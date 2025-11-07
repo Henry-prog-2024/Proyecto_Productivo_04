@@ -16,7 +16,7 @@ st.set_page_config(
 st.title("🏠 Predictor de Probabilidad de Compra - Inmobiliaria")
 st.markdown("---")
 
-# Cargar modelo y recursos
+# Cargar el modelo y preprocesadores
 @st.cache_resource
 def load_model():
     try:
@@ -29,78 +29,197 @@ def load_model():
             try:
                 label_encoders[col] = joblib.load(f'label_encoder_{col}.pkl')
             except:
+                st.warning(f"No se pudo cargar label_encoder_{col}.pkl")
                 label_encoders[col] = None
 
         return model, scaler, columnas, label_encoders
     except Exception as e:
         st.error(f"Error cargando el modelo: {e}")
+        st.info("Asegúrate de tener todos los archivos .pkl en el directorio actual")
         return None, None, None, None
 
+# Cargar recursos
 model, scaler, columnas_modelo, label_encoders = load_model()
+
 if model is None:
     st.stop()
 
-# === SIDEBAR: Ingreso de Datos ===
+# Sidebar para entrada de datos
 st.sidebar.header("📋 Datos del Cliente y Propiedad")
 
-st.sidebar.subheader("Identificación del Cliente")
+# Campo adicional: DNI del cliente
 dni_cliente = st.sidebar.text_input("DNI del Cliente", max_chars=8)
 
+# Dividir en secciones
 st.sidebar.subheader("1. Información del Proyecto")
-proyecto = st.sidebar.selectbox("Proyecto",
-    [f"PROYECTO_{i}" for i in range(1, 11)]
+
+proyecto = st.sidebar.selectbox(
+    "Proyecto",
+    ['PROYECTO_1', 'PROYECTO_2', 'PROYECTO_3', 'PROYECTO_4', 'PROYECTO_5',
+     'PROYECTO_6', 'PROYECTO_7', 'PROYECTO_8', 'PROYECTO_9', 'PROYECTO_10']
 )
-manzana = st.sidebar.selectbox("Manzana", ['Mz-A', 'Mz-B', 'Mz-C', 'Mz-D', 'Mz-E'])
-lote_ubicacion = st.sidebar.selectbox("Ubicación del Lote",
-    [f"UBICACION_{i}" for i in range(1, 11)]
+
+manzana = st.sidebar.selectbox(
+    "Manzana",
+    ['Mz-A', 'Mz-B', 'Mz-C', 'Mz-D', 'Mz-E']
+)
+
+lote_ubicacion = st.sidebar.selectbox(
+    "Ubicación del Lote",
+    ['UBICACION_1', 'UBICACION_2', 'UBICACION_3', 'UBICACION_4', 'UBICACION_5',
+     'UBICACION_6', 'UBICACION_7', 'UBICACION_8', 'UBICACION_9', 'UBICACION_10']
 )
 
 st.sidebar.subheader("2. Características del Lote")
-metros_cuadrados = st.sidebar.slider("Metros Cuadrados", 80, 200, 140, 5)
-lote_precio_total = st.sidebar.selectbox("Precio Total del Lote ($)", list(range(15000, 41000, 1000)))
+
+metros_cuadrados = st.sidebar.slider(
+    "Metros Cuadrados",
+    min_value=80,
+    max_value=200,
+    value=140,
+    step=5
+)
+
+lote_precio_total = st.sidebar.selectbox(
+    "Precio Total del Lote ($)",
+    [15000, 16000, 17000, 18000, 19000, 20000, 21000, 22000, 23000, 24000,
+     25000, 26000, 27000, 28000, 29000, 30000, 31000, 32000, 33000, 34000,
+     35000, 36000, 37000, 38000, 39000, 40000]
+)
 
 st.sidebar.subheader("3. Información de Reserva")
-monto_reserva = st.sidebar.selectbox("Monto de Reserva ($)", [500, 600, 800, 900, 1000, 2000, 5000, 10000])
-tiempo_reserva_dias = st.sidebar.slider("Tiempo de Reserva (días)", 1, 90, 7)
-dias_hasta_limite = st.sidebar.slider("Días hasta Fecha Límite", 1, 30, 30)
-metodo_pago = st.sidebar.selectbox("Método de Pago", ['EFECTIVO', 'TARJETA', 'YAPE'])
+
+monto_reserva = st.sidebar.selectbox(
+    "Monto de Reserva ($)",
+    [500, 600, 800, 900, 1000, 2000, 5000, 10000]
+)
+
+tiempo_reserva_dias = st.sidebar.slider(
+    "Tiempo de Reserva (días)",
+    min_value=1,
+    max_value=90,
+    value=7,
+    step=1
+)
+
+dias_hasta_limite = st.sidebar.slider(
+    "Días hasta Fecha Límite",
+    min_value=1,
+    max_value=30,
+    value=30,
+    step=1
+)
+
+metodo_pago = st.sidebar.selectbox(
+    "Método de Pago",
+    ['EFECTIVO', 'TARJETA', 'YAPE']
+)
 
 st.sidebar.subheader("4. Información del Cliente")
-cliente_edad = st.sidebar.slider("Edad del Cliente", 25, 70, 45)
-cliente_genero = st.sidebar.selectbox("Género del Cliente", ['M', 'F'])
-cliente_profesion = st.sidebar.selectbox("Profesión del Cliente",
-    ['Ingeniero', 'Doctor', 'Abogado', 'Docente', 'Comerciante', 'Empresario', 'Otro'])
-cliente_distrito = st.sidebar.selectbox("Distrito del Cliente",
-    ['Distrito_A', 'Distrito_B', 'Distrito_C', 'Distrito_D', 'Distrito_E'])
-SALARIO_DECLARADO = st.sidebar.selectbox("Salario Aproximado ($)", [1000,1500,2000,2500,3000,3500,4000,4500,5000])
+
+cliente_edad = st.sidebar.slider(
+    "Edad del Cliente",
+    min_value=25,
+    max_value=70,
+    value=45,
+    step=1
+)
+
+cliente_genero = st.sidebar.selectbox(
+    "Género del Cliente",
+    ['M', 'F']
+)
+
+cliente_profesion = st.sidebar.selectbox(
+    "Profesión del Cliente",
+    ['Ingeniero', 'Doctor', 'Abogado', 'Docente', 'Comerciante', 'Empresario', 'Otro']
+)
+
+cliente_distrito = st.sidebar.selectbox(
+    "Distrito del Cliente",
+    ['Distrito_A', 'Distrito_B', 'Distrito_C', 'Distrito_D', 'Distrito_E']
+)
+
+SALARIO_DECLARADO = st.sidebar.selectbox(
+    "Salario Aproximado ($)",
+    [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000]
+)
 
 st.sidebar.subheader("5. Comportamiento y Características")
-n_visitas = st.sidebar.slider("Número de Visitas", 0, 5, 2)
-canal_contacto = st.sidebar.selectbox("Canal de Contacto",
-    ['EVENTO', 'FACEBOOK', 'PAGINA WEB', 'WHATSAPP', 'INSTAGRAM', 'VOLANTES'])
-asesor = st.sidebar.selectbox("Asesor", [f"Asesor_{i}" for i in range(1, 101)])
-promesa_regalo = st.sidebar.selectbox("Promesa de Regalo",
-    ['Ninguno', 'Cocina', 'Refrigeradora', 'TV', 'Lavadora'])
-DOCUMENTOS = st.sidebar.selectbox("Estado de Documentos", ['Completo', 'Incompleto', 'Pendiente'])
+
+n_visitas = st.sidebar.slider(
+    "Número de Visitas",
+    min_value=0,
+    max_value=5,
+    value=2,
+    step=1
+)
+
+canal_contacto = st.sidebar.selectbox(
+    "Canal de Contacto",
+    ['EVENTO', 'FACEBOOK', 'PAGINA WEB', 'WHATSAPP', 'INSTAGRAM', 'VOLANTES']
+)
+
+asesor = st.sidebar.selectbox(
+    "Asesor",
+    [f"Asesor_{i}" for i in range(1, 101)]
+)
+
+promesa_regalo = st.sidebar.selectbox(
+    "Promesa de Regalo",
+    ['Ninguno', 'Cocina', 'Refrigeradora', 'TV', 'Lavadora']
+)
+
+DOCUMENTOS = st.sidebar.selectbox(
+    "Estado de Documentos",
+    ['Completo', 'Incompleto', 'Pendiente']
+)
 
 st.sidebar.subheader("6. Ubicación y Amenities")
-CERCA_AVENIDAS = st.sidebar.selectbox("Cerca de Avenidas", ['Si', 'No'])
-CERCA_COLEGIOS = st.sidebar.selectbox("Cerca de Colegios", ['Si', 'No'])
-CERCA_PARQUE = st.sidebar.selectbox("Cerca de Parques", ['Si', 'No'])
+
+CERCA_AVENIDAS = st.sidebar.selectbox(
+    "Cerca de Avenidas",
+    ['Si', 'No']
+)
+
+CERCA_COLEGIOS = st.sidebar.selectbox(
+    "Cerca de Colegios",
+    ['Si', 'No']
+)
+
+CERCA_PARQUE = st.sidebar.selectbox(
+    "Cerca de Parques",
+    ['Si', 'No']
+)
 
 
 # === FUNCIONES ===
 def preprocess_input(data):
     try:
         input_df = pd.DataFrame([data])
+
         input_df['ratio_reserva_precio'] = input_df['monto_reserva'] / input_df['lote_precio_total']
         input_df['precio_m2'] = input_df['lote_precio_total'] / input_df['metros_cuadrados']
 
-        # Categorías de edad
-        input_df['cliente_edad_cat_36-45'] = int(35 < data['cliente_edad'] <= 45)
-        input_df['cliente_edad_cat_46-55'] = int(45 < data['cliente_edad'] <= 55)
-        input_df['cliente_edad_cat_56-70'] = int(data['cliente_edad'] > 55)
+        # Codificar edad categorizada
+        if input_df['cliente_edad'].iloc[0] <= 35:
+            input_df['cliente_edad_cat_36-45'] = 0
+            input_df['cliente_edad_cat_46-55'] = 0
+            input_df['cliente_edad_cat_56-70'] = 0
+        elif input_df['cliente_edad'].iloc[0] <= 45:
+            input_df['cliente_edad_cat_36-45'] = 1
+            input_df['cliente_edad_cat_46-55'] = 0
+            input_df['cliente_edad_cat_56-70'] = 0
+        elif input_df['cliente_edad'].iloc[0] <= 55:
+            input_df['cliente_edad_cat_36-45'] = 0
+            input_df['cliente_edad_cat_46-55'] = 1
+            input_df['cliente_edad_cat_56-70'] = 0
+        else:
+            input_df['cliente_edad_cat_36-45'] = 0
+            input_df['cliente_edad_cat_46-55'] = 0
+            input_df['cliente_edad_cat_56-70'] = 1
 
+        # One-Hot Encoding manual
         categorical_mappings = {
             'metodo_pago': ['EFECTIVO', 'TARJETA', 'YAPE'],
             'cliente_genero': ['M', 'F'],
@@ -116,22 +235,28 @@ def preprocess_input(data):
 
         for col, values in categorical_mappings.items():
             for value in values[1:]:
-                input_df[f"{col}_{value}"] = 1 if data[col] == value else 0
+                col_name = f"{col}_{value}"
+                input_df[col_name] = 1 if data[col] == value else 0
 
+        # Label Encoding para variables con muchos valores
         for col in ['proyecto', 'manzana', 'asesor', 'lote_ubicacion']:
-            if label_encoders.get(col):
-                input_df[f"{col}_encoded"] = label_encoders[col].transform([data[col]])[0]
-            else:
-                input_df[f"{col}_encoded"] = 0
+            if label_encoders.get(col) is not None:
+                try:
+                    input_df[f'{col}_encoded'] = label_encoders[col].transform([data[col]])[0]
+                except:
+                    input_df[f'{col}_encoded'] = 0
 
         for col in columnas_modelo:
             if col not in input_df.columns:
                 input_df[col] = 0
 
         input_df = input_df[columnas_modelo]
-        numeric_cols = [col for col in ['metros_cuadrados','monto_reserva','lote_precio_total',
-                       'tiempo_reserva_dias','SALARIO_DECLARADO','n_visitas',
-                       'ratio_reserva_precio','dias_hasta_limite','precio_m2'] if col in input_df.columns]
+
+        numeric_cols = ['metros_cuadrados', 'monto_reserva', 'lote_precio_total',
+                        'tiempo_reserva_dias', 'SALARIO_DECLARADO', 'n_visitas',
+                        'ratio_reserva_precio', 'dias_hasta_limite', 'precio_m2']
+
+        numeric_cols = [col for col in numeric_cols if col in input_df.columns]
         input_df[numeric_cols] = scaler.transform(input_df[numeric_cols])
 
         return input_df
@@ -140,9 +265,10 @@ def preprocess_input(data):
         return None
 
 
-# === PREDICCIÓN ===
+# === BOTÓN DE PREDICCIÓN ===
 st.sidebar.markdown("---")
 if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
+
     input_data = {
         'dni_cliente': dni_cliente,
         'proyecto': proyecto,
@@ -170,6 +296,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
     }
 
     processed_data = preprocess_input(input_data)
+
     if processed_data is not None:
         try:
             probabilidad = model.predict_proba(processed_data)[0][1]
@@ -179,16 +306,17 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
             st.metric("Probabilidad de Compra", f"{probabilidad*100:.1f}%")
             st.progress(float(probabilidad))
 
+            # === Análisis ===
             st.subheader("📊 Análisis de la Predicción")
-            st.write("**Factores Positivos y Riesgos** según tus datos ingresados.")
+            st.info("Evaluación de factores positivos y de riesgo según los datos ingresados.")
 
-            # --- Sección de guardado ---
-            st.markdown("---")
-            st.subheader("💾 Guardar y Descargar Evaluaciones")
-
+            # === Botón Guardar Evaluación ===
             registro = input_data.copy()
             registro['probabilidad'] = round(probabilidad*100, 2)
             registro['prediccion'] = int(prediccion)
+
+            st.markdown("---")
+            st.subheader("💾 Guardar Resultados de Evaluación")
 
             archivo_csv = "evaluaciones_clientes.csv"
 
@@ -198,13 +326,16 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     df_registro.to_csv(archivo_csv, mode='a', header=False, index=False)
                 else:
                     df_registro.to_csv(archivo_csv, index=False)
-                st.success("✅ Evaluación guardada correctamente.")
+                st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
 
+            # Mostrar historial si existe
             if os.path.exists(archivo_csv):
+                st.subheader("📂 Historial de Evaluaciones Recientes")
                 df_historial = pd.read_csv(archivo_csv)
                 st.dataframe(df_historial.tail(10))
+
                 st.download_button(
-                    label="⬇️ Descargar Historial de Evaluaciones",
+                    label="⬇️ Descargar Historial Completo",
                     data=df_historial.to_csv(index=False).encode('utf-8'),
                     file_name="evaluaciones_clientes.csv",
                     mime="text/csv"
@@ -212,3 +343,22 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
 
         except Exception as e:
             st.error(f"Error en la predicción: {e}")
+
+
+# === INFORMACIÓN FINAL ===
+st.header("📈 Análisis de Clientes")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric("Total de Clientes", "100,000")
+    st.metric("Tasa de Conversión", "50%")
+with col2:
+    st.metric("Mejor Proyecto", "PROYECTO_3")
+    st.metric("Asesor Top", "Asesor_15")
+with col3:
+    st.metric("Canal Más Efectivo", "EVENTO")
+    st.metric("Regalo Popular", "Cocina")
+
+st.markdown("---")
+st.info("💡 **Recomendación:** Prioriza montos de reserva altos, documentación completa y seguimiento personalizado para mejorar la probabilidad de compra.")
+
