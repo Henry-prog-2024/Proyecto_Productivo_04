@@ -19,8 +19,10 @@ st.set_page_config(
 # ==========================
 @st.cache_resource
 def load_model():
-    model = joblib.load("modelo_final_XGBoost.pkl")
-    scaler = joblib.load("scaler.pkl")
+    # Cargar modelo y preprocesadores (sin "_balanceado")
+    model = joblib.load('mejor_modelo.pkl')
+    scaler = joblib.load('scaler.pkl')
+    columnas = joblib.load('columnas_modelo.pkl')
     return model, scaler
 
 model, scaler = load_model()
