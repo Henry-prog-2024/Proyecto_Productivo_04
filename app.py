@@ -308,38 +308,38 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
             # Hacer predicción
             #probabilidad = model.predict_proba(processed_data)[0][1]
             #prediccion = model.predict(processed_data)[0]
-                    # =============================
+            # =============================
             # 🔍 PREDICCIÓN Y GUARDADO
             # =============================
 
             if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
 
             # Crear el diccionario de entrada (mantén tus variables originales)
-            input_data = {
-                'proyecto': proyecto,
-                'manzana': manzana,
-                'lote_ubicacion': lote_ubicacion,
-                'metros_cuadrados': metros_cuadrados,
-                'lote_precio_total': lote_precio_total,
-                'monto_reserva': monto_reserva,
-                'tiempo_reserva_dias': tiempo_reserva_dias,
-                'dias_hasta_limite': dias_hasta_limite,
-                'metodo_pago': metodo_pago,
-                'cliente_edad': cliente_edad,
-                'cliente_genero': cliente_genero,
-                'cliente_profesion': cliente_profesion,
-                'cliente_distrito': cliente_distrito,
-                'SALARIO_DECLARADO': SALARIO_DECLARADO,
-                'n_visitas': n_visitas,
-                'canal_contacto': canal_contacto,
-                'asesor': asesor,
-                'promesa_regalo': promesa_regalo,
-                'DOCUMENTOS': DOCUMENTOS,
-                'CERCA_AVENIDAS': CERCA_AVENIDAS,
-                'CERCA_COLEGIOS': CERCA_COLEGIOS,
-                'CERCA_PARQUE': CERCA_PARQUE,
-                'DNI': dni_cliente  # 👈 agregado nuevo
-            }
+                input_data = {
+                    'proyecto': proyecto,
+                    'manzana': manzana,
+                    'lote_ubicacion': lote_ubicacion,
+                    'metros_cuadrados': metros_cuadrados,
+                    'lote_precio_total': lote_precio_total,
+                    'monto_reserva': monto_reserva,
+                    'tiempo_reserva_dias': tiempo_reserva_dias,
+                    'dias_hasta_limite': dias_hasta_limite,
+                    'metodo_pago': metodo_pago,
+                    'cliente_edad': cliente_edad,
+                    'cliente_genero': cliente_genero,
+                    'cliente_profesion': cliente_profesion,
+                    'cliente_distrito': cliente_distrito,
+                    'SALARIO_DECLARADO': SALARIO_DECLARADO,
+                    'n_visitas': n_visitas,
+                    'canal_contacto': canal_contacto,
+                    'asesor': asesor,
+                    'promesa_regalo': promesa_regalo,
+                    'DOCUMENTOS': DOCUMENTOS,
+                    'CERCA_AVENIDAS': CERCA_AVENIDAS,
+                    'CERCA_COLEGIOS': CERCA_COLEGIOS,
+                    'CERCA_PARQUE': CERCA_PARQUE,
+                    'DNI': dni_cliente  # 👈 agregado nuevo
+                }
 
             processed_data = preprocess_input(input_data)
 
