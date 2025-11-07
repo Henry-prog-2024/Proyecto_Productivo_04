@@ -354,12 +354,12 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 prediccion = model.predict(processed_data)[0]
 
                 st.success(f"✅ Predicción completada para el cliente DNI **{dni_cliente}**")
-                st.metric("Probabilidad de Compra", f"{prob*100:.2f}%")
-                st.progress(float(prob))
+                st.metric("Probabilidad de Compra", f"{probabilidad*100:.2f}%")
+                st.progress(float(probabilidad))
 
                 # Crear registro completo con todos los datos + resultado
                 registro_completo = input_data.copy()
-                registro_completo["Probabilidad_Compra"] = prob
+                registro_completo["Probabilidad_Compra"] = probabilidad
                 registro_completo["Predicción"] = "COMPRA" if pred == 1 else "NO COMPRA"
 
                 # Convertir en DataFrame
