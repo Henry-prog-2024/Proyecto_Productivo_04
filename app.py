@@ -379,7 +379,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
 
 
             # Mostrar resultados
-            st.success("✅ Predicción completada!")
+            #st.success("✅ Predicción completada!")
 
             # Mostrar probabilidad con barra de progreso
             col1, col2 = st.columns([1, 2])
