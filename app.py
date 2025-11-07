@@ -205,7 +205,7 @@ with tab_prediccion:
             'CERCA_AVENIDAS': CERCA_AVENIDAS,
             'CERCA_COLEGIOS': CERCA_COLEGIOS,
             'CERCA_PARQUE': CERCA_PARQUE,
-            'DNI': dni_cliente
+            'DNI': dni_cliente,
             'dias_hasta_limite': dias_hasta_limite
         }
 
