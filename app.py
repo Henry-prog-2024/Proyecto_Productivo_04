@@ -326,7 +326,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 'lote_precio_total': lote_precio_total,
                 'monto_reserva': monto_reserva,
                 'tiempo_reserva_dias': tiempo_reserva_dias,
-                'dias_hasta_limite': dias_hasta_limite,
+                #'dias_hasta_limite': dias_hasta_limite,
                 'metodo_pago': metodo_pago,
                 'cliente_edad': cliente_edad,
                 'cliente_genero': cliente_genero,
