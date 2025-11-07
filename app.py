@@ -360,7 +360,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 # Crear registro completo con todos los datos + resultado
                 registro_completo = input_data.copy()
                 registro_completo["Probabilidad_Compra"] = probabilidad
-                registro_completo["Predicción"] = "COMPRA" if pred == 1 else "NO COMPRA"
+                registro_completo["Predicción"] = "COMPRA" if prediccion == 1 else "NO COMPRA"
 
                 # Convertir en DataFrame
                 df_registro = pd.DataFrame([registro_completo])
