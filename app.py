@@ -181,8 +181,7 @@ with tab_prediccion:
     # --- BOTÓN DE PREDICCIÓN ---
     st.sidebar.markdown("---")
     if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
-        if 'dias_hasta_limite' not in data:
-            dias_hasta_limite = 30  # valor promedio o neutro
+        dias_hasta_limite = 30  # valor promedio o neutro
         input_data = {
             'proyecto': proyecto,
             'manzana': manzana,
