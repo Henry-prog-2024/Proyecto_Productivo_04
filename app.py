@@ -357,7 +357,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 #st.metric("Probabilidad de Compra", f"{probabilidad*100:.2f}%")
                 # Mostrar probabilidad con barra de progreso
                 #col1, col2 = st.columns([1, 2])
-                #st.progress(float(probabilidad))
+                st.progress(float(probabilidad))
 
                 # Crear registro completo con todos los datos + resultado
                 registro_completo = input_data.copy()
