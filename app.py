@@ -364,20 +364,52 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 registro_completo["Probabilidad_Compra"] = probabilidad
                 registro_completo["Predicción"] = "COMPRA" if prediccion == 1 else "NO COMPRA"
 
+                # ==========================================================
+                # 💾 GUARDAR Y MOSTRAR HISTORIAL DE EVALUACIONES
+                # ==========================================================
+
                 # Convertir en DataFrame
                 df_registro = pd.DataFrame([registro_completo])
 
-                # Guardar en archivo CSV (modo append)
+                # Nombre del archivo donde se guardarán todas las evaluaciones
                 archivo_csv = "evaluaciones_clientes.csv"
+
+                # Si el archivo ya existe, leerlo para acumular los registros anteriores
                 if os.path.exists(archivo_csv):
-                    df_registro.to_csv(archivo_csv, mode='a', header=False, index=False)
+                    df_historial = pd.read_csv(archivo_csv)
                 else:
-                    df_registro.to_csv(archivo_csv, index=False)
+                    df_historial = pd.DataFrame()
 
-                st.success("📁 Evaluación guardada en 'evaluaciones_clientes.csv'")
+                # Agregar la nueva evaluación al historial
+                df_historial = pd.concat([df_historial, df_registro], ignore_index=True)
 
-                # Mostrar datos guardados (opcional)
-                st.dataframe(df_registro)
+                # Guardar el historial completo actualizado
+                df_historial.to_csv(archivo_csv, index=False)
+
+                st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
+
+                # ==========================================================
+                # 📋 MOSTRAR HISTORIAL COMPLETO DE EVALUACIONES
+                # ==========================================================
+                st.subheader("📊 Historial de Evaluaciones")
+                st.dataframe(df_historial)
+
+                # ==========================================================
+                # ⬇️ OPCIÓN PARA DESCARGAR EL HISTORIAL
+                # ==========================================================
+                import io
+
+                csv_buffer = io.StringIO()
+                df_historial.to_csv(csv_buffer, index=False)
+
+                st.download_button(
+                    label="⬇️ Descargar historial completo",
+                    data=csv_buffer.getvalue(),
+                    file_name="evaluaciones_clientes.csv",
+                    mime="text/csv",
+                    key="btn_descargar_historial"
+                )
+
 
 
             # Mostrar resultados
