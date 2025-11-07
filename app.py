@@ -277,7 +277,9 @@ def preprocess_input(data):
 st.sidebar.markdown("---")
 if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
 
-    # Recopilar todos los datos
+    # ==========================================================
+    # 🧾 RECOLECTAR DATOS DE ENTRADA
+    # ==========================================================
     input_data = {
         'proyecto': proyecto,
         'manzana': manzana,
@@ -286,7 +288,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
         'lote_precio_total': lote_precio_total,
         'monto_reserva': monto_reserva,
         'tiempo_reserva_dias': tiempo_reserva_dias,
-        #'dias_hasta_limite': dias_hasta_limite,
+        # 'dias_hasta_limite': dias_hasta_limite,  # si aplica
         'metodo_pago': metodo_pago,
         'cliente_edad': cliente_edad,
         'cliente_genero': cliente_genero,
@@ -300,127 +302,62 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
         'DOCUMENTOS': DOCUMENTOS,
         'CERCA_AVENIDAS': CERCA_AVENIDAS,
         'CERCA_COLEGIOS': CERCA_COLEGIOS,
-        'CERCA_PARQUE': CERCA_PARQUE
+        'CERCA_PARQUE': CERCA_PARQUE,
+        'DNI': dni_cliente  # ✅ corregido: faltaba coma antes
     }
 
-    # Preprocesar y predecir
-    processed_data = preprocess_input(input_data)
+    try:
+        # ==========================================================
+        # ⚙️ PREPROCESAR Y PREDECIR
+        # ==========================================================
+        processed_data = preprocess_input(input_data)
 
-    if processed_data is not None:
-        try:
-            # Hacer predicción
-            #probabilidad = model.predict_proba(processed_data)[0][1]
-            #prediccion = model.predict(processed_data)[0]
-            # =============================
-            # 🔍 PREDICCIÓN Y GUARDADO
-            # =============================
+        if processed_data is not None:
+            probabilidad = model.predict_proba(processed_data)[0][1]
+            prediccion = model.predict(processed_data)[0]
 
-            #if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary", key="btn_prediccion"):
+            st.success(f"✅ Predicción completada para el cliente DNI **{dni_cliente}**")
 
-            # Crear el diccionario de entrada (mantén tus variables originales)
-            input_data = {
-                'proyecto': proyecto,
-                'manzana': manzana,
-                'lote_ubicacion': lote_ubicacion,
-                'metros_cuadrados': metros_cuadrados,
-                'lote_precio_total': lote_precio_total,
-                'monto_reserva': monto_reserva,
-                'tiempo_reserva_dias': tiempo_reserva_dias,
-                #'dias_hasta_limite': dias_hasta_limite,
-                'metodo_pago': metodo_pago,
-                'cliente_edad': cliente_edad,
-                'cliente_genero': cliente_genero,
-                'cliente_profesion': cliente_profesion,
-                'cliente_distrito': cliente_distrito,
-                'SALARIO_DECLARADO': SALARIO_DECLARADO,
-                'n_visitas': n_visitas,
-                'canal_contacto': canal_contacto,
-                'asesor': asesor,
-                'promesa_regalo': promesa_regalo,
-                'DOCUMENTOS': DOCUMENTOS,
-                'CERCA_AVENIDAS': CERCA_AVENIDAS,
-                'CERCA_COLEGIOS': CERCA_COLEGIOS,
-                'CERCA_PARQUE': CERCA_PARQUE,
-                'DNI': dni_cliente  # 👈 agregado nuevo
-            }
+            # ==========================================================
+            # 💾 GUARDAR RESULTADOS
+            # ==========================================================
+            registro_completo = input_data.copy()
+            registro_completo["Probabilidad_Compra"] = probabilidad
+            registro_completo["Predicción"] = "COMPRA" if prediccion == 1 else "NO COMPRA"
 
-            processed_data = preprocess_input(input_data)
+            df_registro = pd.DataFrame([registro_completo])
+            archivo_csv = "evaluaciones_clientes.csv"
 
-            if processed_data is not None:
-                # Realizar predicción
-                #prob = model.predict_proba(processed_data)[0][1]
-                #pred = model.predict(processed_data)[0]
-                probabilidad = model.predict_proba(processed_data)[0][1]
-                prediccion = model.predict(processed_data)[0]
-
-                st.success(f"✅ Predicción completada para el cliente DNI **{dni_cliente}**")
-                #st.metric("Probabilidad de Compra", f"{probabilidad*100:.2f}%")
-                # Mostrar probabilidad con barra de progreso
-                col1, col2 = st.columns([1, 2])
-                #st.progress(float(probabilidad))
-
-                # Crear registro completo con todos los datos + resultado
-                registro_completo = input_data.copy()
-                registro_completo["Probabilidad_Compra"] = probabilidad
-                registro_completo["Predicción"] = "COMPRA" if prediccion == 1 else "NO COMPRA"
-
-                # ==========================================================
-                # 💾 GUARDAR Y MOSTRAR HISTORIAL DE EVALUACIONES
-                # ==========================================================
-
-                # Convertir en DataFrame
-                df_registro = pd.DataFrame([registro_completo])
-
-                # Nombre del archivo donde se guardarán todas las evaluaciones
-                archivo_csv = "evaluaciones_clientes.csv"
-
-                # Si el archivo ya existe, leerlo para acumular los registros anteriores
-                if os.path.exists(archivo_csv):
-                    df_historial = pd.read_csv(archivo_csv)
-                else:
+            # Leer historial si existe
+            if os.path.exists(archivo_csv):
+                try:
+                    df_historial = pd.read_csv(archivo_csv, on_bad_lines='skip')
+                except Exception as e:
+                    st.warning(f"No se pudo leer el archivo existente: {e}. Se creará uno nuevo.")
                     df_historial = pd.DataFrame()
+            else:
+                df_historial = pd.DataFrame()
 
-                # Agregar la nueva evaluación al historial
+            # Alinear columnas entre historial y nuevo registro
+            if not df_historial.empty:
+                todas_columnas = sorted(set(df_historial.columns).union(df_registro.columns))
+                df_historial = df_historial.reindex(columns=todas_columnas, fill_value=np.nan)
+                df_registro = df_registro.reindex(columns=todas_columnas, fill_value=np.nan)
                 df_historial = pd.concat([df_historial, df_registro], ignore_index=True)
+            else:
+                df_historial = df_registro
 
-                # Guardar el historial completo actualizado
-                df_historial.to_csv(archivo_csv, index=False)
+            # Guardar historial completo
+            df_historial.to_csv(archivo_csv, index=False)
+            st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
 
-                st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
-
-                # ==========================================================
-                # 📋 MOSTRAR HISTORIAL COMPLETO DE EVALUACIONES
-                # ==========================================================
-                st.subheader("📊 Historial de Evaluaciones")
-                st.dataframe(df_historial)
-
-                # ==========================================================
-                # ⬇️ OPCIÓN PARA DESCARGAR EL HISTORIAL
-                # ==========================================================
-                import io
-
-                csv_buffer = io.StringIO()
-                df_historial.to_csv(csv_buffer, index=False)
-
-                st.download_button(
-                    label="⬇️ Descargar historial completo",
-                    data=csv_buffer.getvalue(),
-                    file_name="evaluaciones_clientes.csv",
-                    mime="text/csv",
-                    key="btn_descargar_historial"
-                )
-
-
-
-            # Mostrar resultados
-            #st.success("✅ Predicción completada!")
+            # ==========================================================
+            # 📊 MOSTRAR RESULTADOS Y ANÁLISIS
+            # ==========================================================
+            col1, col2 = st.columns([1, 2])
 
             with col1:
-                st.metric(
-                    label="Probabilidad de Compra",
-                    value=f"{probabilidad*100:.1f}%"
-                )
-
+                st.metric("Probabilidad de Compra", f"{probabilidad*100:.1f}%")
                 if probabilidad > 0.7:
                     st.success("🎉 Alta probabilidad de compra")
                 elif probabilidad > 0.4:
@@ -432,9 +369,28 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 st.progress(float(probabilidad))
                 st.caption(f"Confianza del modelo: {probabilidad*100:.1f}%")
 
-            # Mostrar detalles de la predicción
-            st.subheader("📊 Análisis de la Predicción")
+            # Mostrar historial
+            st.subheader("📊 Historial de Evaluaciones")
+            st.dataframe(df_historial)
 
+            # ==========================================================
+            # ⬇️ DESCARGA CSV
+            # ==========================================================
+            import io
+            csv_buffer = io.StringIO()
+            df_historial.to_csv(csv_buffer, index=False)
+            st.download_button(
+                label="⬇️ Descargar historial completo",
+                data=csv_buffer.getvalue(),
+                file_name="evaluaciones_clientes.csv",
+                mime="text/csv",
+                key="btn_descargar_historial"
+            )
+
+            # ==========================================================
+            # 🔍 ANÁLISIS DE FACTORES
+            # ==========================================================
+            st.subheader("📊 Análisis de la Predicción")
             col3, col4 = st.columns(2)
 
             with col3:
@@ -456,7 +412,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 st.warning("**Factores de Riesgo:**")
                 if monto_reserva < 1000:
                     st.write("❌ Monto de reserva bajo")
-                if monto_reserva >= 1000 and monto_reserva < 2000:
+                elif monto_reserva < 2000:
                     st.write("❌ Monto de reserva medio")
                 if n_visitas <= 2:
                     st.write("❌ Pocas visitas")
@@ -467,8 +423,9 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 if SALARIO_DECLARADO < 3000:
                     st.write("❌ Bajo nivel de ingresos")
 
-        except Exception as e:
-            st.error(f"Error en la predicción: {e}")
+    except Exception as e:
+        st.error(f"Error en la predicción: {e}")
+
 
 # Información adicional en el main
 st.header("📈 Análisis de Clientes")
