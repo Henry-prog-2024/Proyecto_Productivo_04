@@ -49,6 +49,9 @@ if model is None:
 # Sidebar para entrada de datos
 st.sidebar.header("📋 Datos del Cliente y Propiedad")
 
+# DNI
+dni_cliente = st.sidebar.text_input("🪪 DNI del Cliente", "")
+
 # Dividir en secciones
 st.sidebar.subheader("1. Información del Proyecto")
 
