@@ -315,7 +315,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
             # 🔍 PREDICCIÓN Y GUARDADO
             # =============================
 
-            if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary", key="btn_prediccion"):
+            #if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary", key="btn_prediccion"):
 
             # Crear el diccionario de entrada (mantén tus variables originales)
                 input_data = {
@@ -348,8 +348,10 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
 
             if processed_data is not None:
                 # Realizar predicción
-                prob = model.predict_proba(processed_data)[0][1]
-                pred = model.predict(processed_data)[0]
+                #prob = model.predict_proba(processed_data)[0][1]
+                #pred = model.predict(processed_data)[0]
+                probabilidad = model.predict_proba(processed_data)[0][1]
+                prediccion = model.predict(processed_data)[0]
 
                 st.success(f"✅ Predicción completada para el cliente DNI **{dni_cliente}**")
                 st.metric("Probabilidad de Compra", f"{prob*100:.2f}%")
