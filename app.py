@@ -397,7 +397,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.error("📉 Baja probabilidad de compra")
 
             with col2:
-                st.progress(float(probabilidad))
+                #st.progress(float(probabilidad))
                 st.caption(f"Confianza del modelo: {probabilidad*100:.1f}%")
 
             # Mostrar detalles de la predicción
