@@ -303,7 +303,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
         'CERCA_AVENIDAS': CERCA_AVENIDAS,
         'CERCA_COLEGIOS': CERCA_COLEGIOS,
         'CERCA_PARQUE': CERCA_PARQUE,
-        'DNI': dni_cliente  # ✅ corregido: faltaba coma antes
+        'DNI': dni_cliente  # ✅ corregido
     }
 
     try:
@@ -319,40 +319,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
             st.success(f"✅ Predicción completada para el cliente DNI **{dni_cliente}**")
 
             # ==========================================================
-            # 💾 GUARDAR RESULTADOS
-            # ==========================================================
-            registro_completo = input_data.copy()
-            registro_completo["Probabilidad_Compra"] = probabilidad
-            registro_completo["Predicción"] = "COMPRA" if prediccion == 1 else "NO COMPRA"
-
-            df_registro = pd.DataFrame([registro_completo])
-            archivo_csv = "evaluaciones_clientes.csv"
-
-            # Leer historial si existe
-            if os.path.exists(archivo_csv):
-                try:
-                    df_historial = pd.read_csv(archivo_csv, on_bad_lines='skip')
-                except Exception as e:
-                    st.warning(f"No se pudo leer el archivo existente: {e}. Se creará uno nuevo.")
-                    df_historial = pd.DataFrame()
-            else:
-                df_historial = pd.DataFrame()
-
-            # Alinear columnas entre historial y nuevo registro
-            if not df_historial.empty:
-                todas_columnas = sorted(set(df_historial.columns).union(df_registro.columns))
-                df_historial = df_historial.reindex(columns=todas_columnas, fill_value=np.nan)
-                df_registro = df_registro.reindex(columns=todas_columnas, fill_value=np.nan)
-                df_historial = pd.concat([df_historial, df_registro], ignore_index=True)
-            else:
-                df_historial = df_registro
-
-            # Guardar historial completo
-            df_historial.to_csv(archivo_csv, index=False)
-            st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
-
-            # ==========================================================
-            # 📊 MOSTRAR RESULTADOS Y ANÁLISIS
+            # 📊 RESULTADO PRINCIPAL
             # ==========================================================
             col1, col2 = st.columns([1, 2])
 
@@ -369,28 +336,11 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 st.progress(float(probabilidad))
                 st.caption(f"Confianza del modelo: {probabilidad*100:.1f}%")
 
-            # Mostrar historial
-            st.subheader("📊 Historial de Evaluaciones")
-            st.dataframe(df_historial)
-
             # ==========================================================
-            # ⬇️ DESCARGA CSV
-            # ==========================================================
-            import io
-            csv_buffer = io.StringIO()
-            df_historial.to_csv(csv_buffer, index=False)
-            st.download_button(
-                label="⬇️ Descargar historial completo",
-                data=csv_buffer.getvalue(),
-                file_name="evaluaciones_clientes.csv",
-                mime="text/csv",
-                key="btn_descargar_historial"
-            )
-
-            # ==========================================================
-            # 🔍 ANÁLISIS DE FACTORES
+            # 🔍 ANÁLISIS DETALLADO
             # ==========================================================
             st.subheader("📊 Análisis de la Predicción")
+
             col3, col4 = st.columns(2)
 
             with col3:
@@ -422,6 +372,60 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.write("❌ Tiempo de reserva muy largo")
                 if SALARIO_DECLARADO < 3000:
                     st.write("❌ Bajo nivel de ingresos")
+
+            # ==========================================================
+            # 💾 GUARDAR PREDICCIÓN MANUALMENTE
+            # ==========================================================
+            registro_completo = input_data.copy()
+            registro_completo["Probabilidad_Compra"] = probabilidad
+            registro_completo["Predicción"] = "COMPRA" if prediccion == 1 else "NO COMPRA"
+
+            if st.button("💾 Guardar esta predicción en el historial"):
+                df_registro = pd.DataFrame([registro_completo])
+                archivo_csv = "evaluaciones_clientes.csv"
+
+                # Leer historial existente (si lo hay)
+                if os.path.exists(archivo_csv):
+                    try:
+                        df_historial = pd.read_csv(archivo_csv, on_bad_lines='skip')
+                    except Exception as e:
+                        st.warning(f"No se pudo leer el archivo existente: {e}. Se creará uno nuevo.")
+                        df_historial = pd.DataFrame()
+                else:
+                    df_historial = pd.DataFrame()
+
+                # Alinear columnas entre historial y nuevo registro
+                if not df_historial.empty:
+                    todas_columnas = sorted(set(df_historial.columns).union(df_registro.columns))
+                    df_historial = df_historial.reindex(columns=todas_columnas, fill_value=np.nan)
+                    df_registro = df_registro.reindex(columns=todas_columnas, fill_value=np.nan)
+                    df_historial = pd.concat([df_historial, df_registro], ignore_index=True)
+                else:
+                    df_historial = df_registro
+
+                # Guardar historial completo
+                df_historial.to_csv(archivo_csv, index=False)
+                st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
+
+                # ==========================================================
+                # 📋 MOSTRAR HISTORIAL DE EVALUACIONES
+                # ==========================================================
+                st.subheader("🧠 Historial de Evaluaciones Realizadas")
+                st.dataframe(df_historial)
+
+                # ==========================================================
+                # ⬇️ DESCARGAR HISTORIAL
+                # ==========================================================
+                import io
+                csv_buffer = io.StringIO()
+                df_historial.to_csv(csv_buffer, index=False)
+                st.download_button(
+                    label="⬇️ Descargar historial completo",
+                    data=csv_buffer.getvalue(),
+                    file_name="evaluaciones_clientes.csv",
+                    mime="text/csv",
+                    key="btn_descargar_historial"
+                )
 
     except Exception as e:
         st.error(f"Error en la predicción: {e}")
