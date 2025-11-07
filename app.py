@@ -312,7 +312,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
             # 🔍 PREDICCIÓN Y GUARDADO
             # =============================
 
-            if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
+            if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary", key="btn_prediccion"):
 
             # Crear el diccionario de entrada (mantén tus variables originales)
                 input_data = {
