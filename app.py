@@ -106,14 +106,6 @@ tiempo_reserva_dias = st.sidebar.slider(
     step=1
 )
 
-dias_hasta_limite = st.sidebar.slider(
-    "Días hasta Fecha Límite",
-    min_value=1,
-    max_value=90,
-    value=30,
-    step=1
-)
-
 metodo_pago = st.sidebar.selectbox(
     "Método de Pago",
     ['EFECTIVO', 'TARJETA', 'YAPE']
@@ -181,26 +173,14 @@ DOCUMENTOS = st.sidebar.selectbox(
 
 st.sidebar.subheader("6. Ubicación y Amenities")
 
-CERCA_AVENIDAS = st.sidebar.selectbox(
-    "Cerca de Avenidas",
-    ['Si', 'No']
-)
+CERCA_AVENIDAS = st.sidebar.selectbox("Cerca de Avenidas", ['Si', 'No'])
+CERCA_COLEGIOS = st.sidebar.selectbox("Cerca de Colegios", ['Si', 'No'])
+CERCA_PARQUE = st.sidebar.selectbox("Cerca de Parques", ['Si', 'No'])
 
-CERCA_COLEGIOS = st.sidebar.selectbox(
-    "Cerca de Colegios",
-    ['Si', 'No']
-)
-
-CERCA_PARQUE = st.sidebar.selectbox(
-    "Cerca de Parques",
-    ['Si', 'No']
-)
-
-# --- Función de preprocesamiento (sin cambios del código original) ---
+# --- Función de preprocesamiento ---
 def preprocess_input(data):
     try:
         input_df = pd.DataFrame([data])
-
         input_df['ratio_reserva_precio'] = input_df['monto_reserva'] / input_df['lote_precio_total']
         input_df['precio_m2'] = input_df['lote_precio_total'] / input_df['metros_cuadrados']
 
@@ -253,7 +233,7 @@ def preprocess_input(data):
 
         numeric_cols = ['metros_cuadrados', 'monto_reserva', 'lote_precio_total',
                        'tiempo_reserva_dias', 'SALARIO_DECLARADO', 'n_visitas',
-                       'ratio_reserva_precio', 'dias_hasta_limite', 'precio_m2']
+                       'ratio_reserva_precio', 'precio_m2']
         numeric_cols = [col for col in numeric_cols if col in input_df.columns]
         input_df[numeric_cols] = scaler.transform(input_df[numeric_cols])
 
@@ -261,7 +241,6 @@ def preprocess_input(data):
     except Exception as e:
         st.error(f"Error en preprocesamiento: {e}")
         return None
-
 
 # --- BOTÓN DE PREDICCIÓN ---
 st.sidebar.markdown("---")
@@ -275,7 +254,6 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
         'lote_precio_total': lote_precio_total,
         'monto_reserva': monto_reserva,
         'tiempo_reserva_dias': tiempo_reserva_dias,
-        'dias_hasta_limite': dias_hasta_limite,
         'metodo_pago': metodo_pago,
         'cliente_edad': cliente_edad,
         'cliente_genero': cliente_genero,
@@ -350,14 +328,13 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
         except Exception as e:
             st.error(f"Error en la predicción: {e}")
 
-# 🆕 Mostrar historial de predicciones
+# 🆕 Mostrar historial acumulado y botón de descarga
 if len(st.session_state.historial) > 0:
     st.markdown("---")
-    st.subheader("📜 Historial de Evaluaciones Recientes")
+    st.subheader("📜 Historial de Predicciones Guardadas")
     df_historial = pd.DataFrame(st.session_state.historial)
     st.dataframe(df_historial, use_container_width=True)
 
-    # Botón de descarga CSV
     csv = df_historial.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="⬇️ Descargar Historial en CSV",
