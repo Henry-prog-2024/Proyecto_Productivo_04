@@ -323,49 +323,56 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 if SALARIO_DECLARADO < 3000: st.write("❌ Bajo nivel de ingresos")
 
             archivo_csv = "evaluaciones_clientes.csv"
-            # 🆕 Botón para guardar evaluación
-            #if st.button("💾 Guardar Evaluación"):
-            #    nuevo_registro = {
-            #        "DNI": dni_cliente,
-            #        "Proyecto": proyecto,
-            #        "Asesor": asesor,
-            #        "Probabilidad (%)": round(probabilidad*100, 2),
-            #        "Resultado": "Compra" if prediccion == 1 else "No Compra"
-            #    }
-            #    st.session_state.historial.append(nuevo_registro)
-            #    st.success("💾 Evaluación guardada correctamente.")
-            if st.button("💾 Guardar Evaluación"):
-                df_registro = pd.DataFrame([registro])
-                if os.path.exists(archivo_csv):
-                    df_registro.to_csv(archivo_csv, mode='a', header=False, index=False)
-                else:
-                    df_registro.to_csv(archivo_csv, index=False)
-                st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
+            
+            processed_data = preprocess_input(input_data)
 
-            # Mostrar historial si existe
-            if os.path.exists(archivo_csv):
-                st.subheader("📂 Historial de Evaluaciones Recientes")
-                df_historial = pd.read_csv(archivo_csv)
-                st.dataframe(df_historial.tail(10))
+            if processed_data is not None:
+                try:
+                    probabilidad = model.predict_proba(processed_data)[0][1]
+                    prediccion = model.predict(processed_data)[0]
 
+                    st.success("✅ Predicción completada!")
+                    st.metric("Probabilidad de Compra", f"{probabilidad*100:.1f}%")
+                    st.progress(float(probabilidad))
 
-        except Exception as e:
-            st.error(f"Error en la predicción: {e}")
+                    # === Análisis ===
+                    st.subheader("📊 Análisis de la Predicción")
+                    st.info("Evaluación de factores positivos y de riesgo según los datos ingresados.")
 
-# 🆕 Mostrar historial acumulado y botón de descarga
-if len(st.session_state.historial) > 0:
-    st.markdown("---")
-    st.subheader("📜 Historial de Predicciones Guardadas")
-    df_historial = pd.DataFrame(st.session_state.historial)
-    st.dataframe(df_historial, use_container_width=True)
+                    # === Botón Guardar Evaluación ===
+                    registro = input_data.copy()
+                    registro['probabilidad'] = round(probabilidad*100, 2)
+                    registro['prediccion'] = int(prediccion)
 
-    csv = df_historial.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="⬇️ Descargar Historial en CSV",
-        data=csv,
-        file_name="historial_predicciones.csv",
-        mime="text/csv"
-    )
+                    st.markdown("---")
+                    st.subheader("💾 Guardar Resultados de Evaluación")
+
+                    archivo_csv = "evaluaciones_clientes.csv"
+
+                    if st.button("💾 Guardar Evaluación"):
+                        df_registro = pd.DataFrame([registro])
+                        if os.path.exists(archivo_csv):
+                            df_registro.to_csv(archivo_csv, mode='a', header=False, index=False)
+                        else:
+                            df_registro.to_csv(archivo_csv, index=False)
+                        st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
+
+                    # Mostrar historial si existe
+                    if os.path.exists(archivo_csv):
+                        st.subheader("📂 Historial de Evaluaciones Recientes")
+                        df_historial = pd.read_csv(archivo_csv)
+                        st.dataframe(df_historial.tail(10))
+
+                        st.download_button(
+                            label="⬇️ Descargar Historial Completo",
+                            data=df_historial.to_csv(index=False).encode('utf-8'),
+                            file_name="evaluaciones_clientes.csv",
+                            mime="text/csv"
+                        )
+
+                except Exception as e:
+                    st.error(f"Error en la predicción: {e}")
+
 
 # Información adicional en el main
 st.header("📈 Análisis de Clientes")
