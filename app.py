@@ -337,15 +337,35 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
 
             # 🆕 Botón para guardar evaluación
             if st.button("💾 Guardar Evaluación"):
-                nuevo_registro = {
-                    "DNI": dni_cliente,
-                    "Proyecto": proyecto,
-                    "Asesor": asesor,
-                    "Probabilidad (%)": round(probabilidad*100, 2),
-                    "Resultado": "Compra" if prediccion == 1 else "No Compra"
-                }
-                st.session_state.historial.append(nuevo_registro)
-                st.success("💾 Evaluación guardada correctamente.")
+                if dni_cliente.strip() == "":
+                    st.warning("⚠️ Ingresa un DNI antes de guardar la evaluación.")
+                else:
+                    nuevo_registro = {
+                        "DNI": dni_cliente,
+                        "Proyecto": proyecto,
+                        "Asesor": asesor,
+                        "Probabilidad (%)": round(probabilidad*100, 2),
+                        "Resultado": "Compra" if prediccion == 1 else "No Compra"
+                    }
+                    st.session_state.historial.append(nuevo_registro)
+                    st.success("💾 Evaluación guardada correctamente.")
+
+                    # Mostrar cuadro de historial actualizado inmediatamente
+                    if len(st.session_state.historial) > 0:
+                        st.markdown("---")
+                        st.subheader("📜 Historial de Evaluaciones Recientes")
+                        df_historial = pd.DataFrame(st.session_state.historial)
+                        st.dataframe(df_historial, use_container_width=True)
+
+                        # Botón de descarga CSV
+                        csv = df_historial.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            label="⬇️ Descargar Historial en CSV",
+                            data=csv,
+                            file_name="historial_predicciones.csv",
+                            mime="text/csv"
+                        )
+
 
         except Exception as e:
             st.error(f"Error en la predicción: {e}")
