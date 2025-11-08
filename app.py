@@ -313,6 +313,27 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 st.progress(float(probabilidad))
                 st.caption(f"Confianza del modelo: {probabilidad*100:.1f}%")
 
+            st.subheader("📊 Análisis de la Predicción")
+
+            col3, col4 = st.columns(2)
+            with col3:
+                st.info("**Factores Positivos:**")
+                if monto_reserva >= 2000: st.write("✅ Monto de reserva alto")
+                if n_visitas >= 3: st.write("✅ Múltiples visitas")
+                if DOCUMENTOS == 'Completo': st.write("✅ Documentación completa")
+                if SALARIO_DECLARADO >= 3000: st.write("✅ Buen nivel de ingresos")
+                if tiempo_reserva_dias <= 30: st.write("✅ Tiempo de reserva promedio")
+                if CERCA_AVENIDAS == 'Si': st.write("✅ Cerca de avenidas")
+
+            with col4:
+                st.warning("**Factores de Riesgo:**")
+                if monto_reserva < 1000: st.write("❌ Monto de reserva bajo")
+                if monto_reserva >= 1000 and monto_reserva < 2000: st.write("❌ Monto de reserva medio")
+                if n_visitas <= 2: st.write("❌ Pocas visitas")
+                if DOCUMENTOS == 'Incompleto': st.write("❌ Documentación incompleta")
+                if tiempo_reserva_dias >= 31: st.write("❌ Tiempo de reserva muy largo")
+                if SALARIO_DECLARADO < 3000: st.write("❌ Bajo nivel de ingresos")
+
             # Guardar valores en sesión
             st.session_state.probabilidad = probabilidad
             st.session_state.prediccion = prediccion
