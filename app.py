@@ -374,9 +374,10 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                     st.error(f"Error en la predicción: {e}")
 
 
-# Información adicional en el main
+# === INFORMACIÓN FINAL ===
 st.header("📈 Análisis de Clientes")
 col1, col2, col3 = st.columns(3)
+
 with col1:
     st.metric("Total de Clientes", "100,000")
     st.metric("Tasa de Conversión", "50%")
@@ -388,4 +389,4 @@ with col3:
     st.metric("Regalo Popular", "Cocina")
 
 st.markdown("---")
-st.info("💡 **Recomendaciones:** Para aumentar la probabilidad de compra, considere montos de reserva más altos, documentación completa y seguimiento cercano del asesor.")
+st.info("💡 **Recomendación:** Prioriza montos de reserva altos, documentación completa y seguimiento personalizado para mejorar la probabilidad de compra.")
