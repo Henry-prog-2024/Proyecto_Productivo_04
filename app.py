@@ -323,16 +323,30 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 if SALARIO_DECLARADO < 3000: st.write("❌ Bajo nivel de ingresos")
 
             # 🆕 Botón para guardar evaluación
+            #if st.button("💾 Guardar Evaluación"):
+            #    nuevo_registro = {
+            #        "DNI": dni_cliente,
+            #        "Proyecto": proyecto,
+            #        "Asesor": asesor,
+            #        "Probabilidad (%)": round(probabilidad*100, 2),
+            #        "Resultado": "Compra" if prediccion == 1 else "No Compra"
+            #    }
+            #    st.session_state.historial.append(nuevo_registro)
+            #    st.success("💾 Evaluación guardada correctamente.")
             if st.button("💾 Guardar Evaluación"):
-                nuevo_registro = {
-                    "DNI": dni_cliente,
-                    "Proyecto": proyecto,
-                    "Asesor": asesor,
-                    "Probabilidad (%)": round(probabilidad*100, 2),
-                    "Resultado": "Compra" if prediccion == 1 else "No Compra"
-                }
-                st.session_state.historial.append(nuevo_registro)
-                st.success("💾 Evaluación guardada correctamente.")
+                df_registro = pd.DataFrame([registro])
+                if os.path.exists(archivo_csv):
+                    df_registro.to_csv(archivo_csv, mode='a', header=False, index=False)
+                else:
+                    df_registro.to_csv(archivo_csv, index=False)
+                st.success("✅ Evaluación guardada correctamente en 'evaluaciones_clientes.csv'")
+
+            # Mostrar historial si existe
+            if os.path.exists(archivo_csv):
+                st.subheader("📂 Historial de Evaluaciones Recientes")
+                df_historial = pd.read_csv(archivo_csv)
+                st.dataframe(df_historial.tail(10))
+
 
         except Exception as e:
             st.error(f"Error en la predicción: {e}")
