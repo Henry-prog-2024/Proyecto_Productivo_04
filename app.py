@@ -335,6 +335,12 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 if tiempo_reserva_dias >= 31: st.write("❌ Tiempo de reserva muy largo")
                 if SALARIO_DECLARADO < 3000: st.write("❌ Bajo nivel de ingresos")
 
+            # ✅ Inicialización de variables de sesión (coloca esto antes del botón si aún no lo tienes)
+            if "historial" not in st.session_state:
+                st.session_state.historial = []
+            if "mostrar_historial" not in st.session_state:
+                st.session_state.mostrar_historial = False
+
             # 🆕 Botón para guardar evaluación
             if st.button("💾 Guardar Evaluación"):
                 if dni_cliente.strip() == "":
@@ -347,23 +353,30 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                         "Probabilidad (%)": round(probabilidad * 100, 2),
                         "Resultado": "Compra" if prediccion == 1 else "No Compra"
                     }
+
+                    # Agregar al historial en sesión
                     st.session_state.historial.append(nuevo_registro)
+
+                    # Activar bandera para mantener visible el historial
+                    st.session_state.mostrar_historial = True
+
+                    # Mensaje de confirmación
                     st.success("💾 Evaluación guardada correctamente.")
 
-                    # 📜 Mostrar cuadro justo debajo del botón
-                    if len(st.session_state.historial) > 0:
-                        st.markdown("### 📋 Evaluaciones Realizadas Hasta el Momento")
-                        df_historial = pd.DataFrame(st.session_state.historial)
-                        st.dataframe(df_historial, use_container_width=True)
+            # 👇 Mostrar cuadro de historial debajo del botón (persistente incluso tras reiniciar)
+            if st.session_state.mostrar_historial and len(st.session_state.historial) > 0:
+                st.markdown("### 📋 Evaluaciones Realizadas Hasta el Momento")
+                df_historial = pd.DataFrame(st.session_state.historial)
+                st.dataframe(df_historial, use_container_width=True)
 
-                        # Botón de descarga CSV
-                        csv = df_historial.to_csv(index=False).encode('utf-8')
-                        st.download_button(
-                            label="⬇️ Descargar Historial en CSV",
-                            data=csv,
-                            file_name="historial_predicciones.csv",
-                            mime="text/csv"
-                        )
+                # Botón de descarga CSV
+                csv = df_historial.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="⬇️ Descargar Historial en CSV",
+                    data=csv,
+                    file_name="historial_predicciones.csv",
+                    mime="text/csv"
+                )
     
 
         except Exception as e:
