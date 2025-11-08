@@ -106,6 +106,14 @@ tiempo_reserva_dias = st.sidebar.slider(
     step=1
 )
 
+dias_hasta_limite = st.sidebar.slider(
+    "Días hasta Fecha Límite",
+    min_value=1,
+    max_value=90,
+    value=30,
+    step=1
+)
+
 metodo_pago = st.sidebar.selectbox(
     "Método de Pago",
     ['EFECTIVO', 'TARJETA', 'YAPE']
@@ -245,7 +253,7 @@ def preprocess_input(data):
 
         numeric_cols = ['metros_cuadrados', 'monto_reserva', 'lote_precio_total',
                        'tiempo_reserva_dias', 'SALARIO_DECLARADO', 'n_visitas',
-                       'ratio_reserva_precio', 'precio_m2']
+                       'ratio_reserva_precio', 'dias_hasta_limite', 'precio_m2']
         numeric_cols = [col for col in numeric_cols if col in input_df.columns]
         input_df[numeric_cols] = scaler.transform(input_df[numeric_cols])
 
@@ -267,6 +275,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
         'lote_precio_total': lote_precio_total,
         'monto_reserva': monto_reserva,
         'tiempo_reserva_dias': tiempo_reserva_dias,
+        'dias_hasta_limite': dias_hasta_limite,
         'metodo_pago': metodo_pago,
         'cliente_edad': cliente_edad,
         'cliente_genero': cliente_genero,
