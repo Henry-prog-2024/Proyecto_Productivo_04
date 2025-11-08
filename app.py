@@ -14,233 +14,84 @@ st.set_page_config(
 
 # Título principal
 st.title("🏠 Predictor de Probabilidad de Compra - Inmobiliaria")
-st.markdown("---")
 
-# --- Inicializar historial en sesión y archivo ---
-if "historial" not in st.session_state:
-    if os.path.exists("historial_predicciones.csv"):
-        st.session_state.historial = pd.read_csv("historial_predicciones.csv").to_dict('records')
-    else:
-        st.session_state.historial = []
+# Cargar modelo y scaler
+modelo_path = "modelo_final_XGBoost.pkl"
+scaler_path = "scaler.pkl"
 
-# --- Cargar modelo y recursos ---
-@st.cache_resource
-def load_model():
-    try:
-        model = joblib.load('mejor_modelo.pkl')
-        scaler = joblib.load('scaler.pkl')
-        columnas = joblib.load('columnas_modelo.pkl')
-
-        label_encoders = {}
-        for col in ['proyecto', 'manzana', 'asesor', 'lote_ubicacion']:
-            try:
-                label_encoders[col] = joblib.load(f'label_encoder_{col}.pkl')
-            except:
-                st.warning(f"No se pudo cargar label_encoder_{col}.pkl")
-                label_encoders[col] = None
-
-        return model, scaler, columnas, label_encoders
-    except Exception as e:
-        st.error(f"Error cargando el modelo: {e}")
-        st.info("Asegúrate de tener todos los archivos .pkl en el directorio actual")
-        return None, None, None, None
-
-model, scaler, columnas_modelo, label_encoders = load_model()
-if model is None:
+if not os.path.exists(modelo_path) or not os.path.exists(scaler_path):
+    st.error("❌ No se encontró el archivo del modelo o del scaler.")
     st.stop()
 
-# --- Sidebar ---
-st.sidebar.header("📋 Datos del Cliente y Propiedad")
+modelo = joblib.load(modelo_path)
+scaler = joblib.load(scaler_path)
 
-dni_cliente = st.sidebar.text_input("🪪 DNI del Cliente", max_chars=8)
+# Inicializar historial en sesión
+if "historial" not in st.session_state:
+    st.session_state.historial = []
 
-st.sidebar.subheader("1. Información del Proyecto")
-proyecto = st.sidebar.selectbox("Proyecto", [f'PROYECTO_{i}' for i in range(1, 11)])
-manzana = st.sidebar.selectbox("Manzana", ['Mz-A', 'Mz-B', 'Mz-C', 'Mz-D', 'Mz-E'])
-lote_ubicacion = st.sidebar.selectbox("Ubicación del Lote", [f'UBICACION_{i}' for i in range(1, 11)])
+# Ingreso de DNI
+dni_cliente = st.text_input("🆔 Ingrese el DNI del cliente:")
 
-st.sidebar.subheader("2. Características del Lote")
-metros_cuadrados = st.sidebar.slider("Metros Cuadrados", 80, 200, 140, 5)
-lote_precio_total = st.sidebar.selectbox("Precio Total del Lote ($)", list(range(15000, 41000, 1000)))
-
-st.sidebar.subheader("3. Información de Reserva")
-monto_reserva = st.sidebar.selectbox("Monto de Reserva ($)", [500, 600, 800, 900, 1000, 2000, 5000, 10000])
-tiempo_reserva_dias = st.sidebar.slider("Tiempo de Reserva (días)", 1, 90, 7)
-dias_hasta_limite = st.sidebar.slider("Días hasta Fecha Límite", 1, 90, 30)
-metodo_pago = st.sidebar.selectbox("Método de Pago", ['EFECTIVO', 'TARJETA', 'YAPE'])
-
-st.sidebar.subheader("4. Información del Cliente")
-cliente_edad = st.sidebar.slider("Edad del Cliente", 25, 70, 45)
-cliente_genero = st.sidebar.selectbox("Género del Cliente", ['M', 'F'])
-cliente_profesion = st.sidebar.selectbox(
-    "Profesión del Cliente",
-    ['Ingeniero', 'Doctor', 'Abogado', 'Docente', 'Comerciante', 'Empresario', 'Otro']
-)
-cliente_distrito = st.sidebar.selectbox("Distrito del Cliente", ['Distrito_A', 'Distrito_B', 'Distrito_C', 'Distrito_D', 'Distrito_E'])
-SALARIO_DECLARADO = st.sidebar.selectbox("Salario Aproximado ($)", [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000])
-
-st.sidebar.subheader("5. Comportamiento y Características")
-n_visitas = st.sidebar.slider("Número de Visitas", 0, 5, 2)
-canal_contacto = st.sidebar.selectbox("Canal de Contacto", ['EVENTO', 'FACEBOOK', 'PAGINA WEB', 'WHATSAPP', 'INSTAGRAM', 'VOLANTES'])
-asesor = st.sidebar.selectbox("Asesor", [f"Asesor_{i}" for i in range(1, 101)])
-promesa_regalo = st.sidebar.selectbox("Promesa de Regalo", ['Ninguno', 'Cocina', 'Refrigeradora', 'TV', 'Lavadora'])
-DOCUMENTOS = st.sidebar.selectbox("Estado de Documentos", ['Completo', 'Incompleto', 'Pendiente'])
-
-st.sidebar.subheader("6. Ubicación y Amenities")
-CERCA_AVENIDAS = st.sidebar.selectbox("Cerca de Avenidas", ['Si', 'No'])
-CERCA_COLEGIOS = st.sidebar.selectbox("Cerca de Colegios", ['Si', 'No'])
-CERCA_PARQUE = st.sidebar.selectbox("Cerca de Parques", ['Si', 'No'])
-
-# --- Preprocesamiento ---
-def preprocess_input(data):
-    try:
-        input_df = pd.DataFrame([data])
-        input_df['ratio_reserva_precio'] = input_df['monto_reserva'] / input_df['lote_precio_total']
-        input_df['precio_m2'] = input_df['lote_precio_total'] / input_df['metros_cuadrados']
-
-        # Edad categórica
-        if input_df['cliente_edad'].iloc[0] <= 35:
-            input_df['cliente_edad_cat_36-45'] = 0
-            input_df['cliente_edad_cat_46-55'] = 0
-            input_df['cliente_edad_cat_56-70'] = 0
-        elif input_df['cliente_edad'].iloc[0] <= 45:
-            input_df['cliente_edad_cat_36-45'] = 1
-            input_df['cliente_edad_cat_46-55'] = 0
-            input_df['cliente_edad_cat_56-70'] = 0
-        elif input_df['cliente_edad'].iloc[0] <= 55:
-            input_df['cliente_edad_cat_36-45'] = 0
-            input_df['cliente_edad_cat_46-55'] = 1
-            input_df['cliente_edad_cat_56-70'] = 0
-        else:
-            input_df['cliente_edad_cat_36-45'] = 0
-            input_df['cliente_edad_cat_46-55'] = 0
-            input_df['cliente_edad_cat_56-70'] = 1
-
-        categorical_mappings = {
-            'metodo_pago': ['EFECTIVO', 'TARJETA', 'YAPE'],
-            'cliente_genero': ['M', 'F'],
-            'cliente_profesion': ['Ingeniero', 'Doctor', 'Abogado', 'Docente', 'Comerciante', 'Empresario', 'Otro'],
-            'cliente_distrito': ['Distrito_A', 'Distrito_B', 'Distrito_C', 'Distrito_D', 'Distrito_E'],
-            'canal_contacto': ['EVENTO', 'FACEBOOK', 'PAGINA WEB', 'WHATSAPP', 'INSTAGRAM', 'VOLANTES'],
-            'promesa_regalo': ['Ninguno', 'Cocina', 'Refrigeradora', 'TV', 'Lavadora'],
-            'DOCUMENTOS': ['Completo', 'Incompleto', 'Pendiente'],
-            'CERCA_AVENIDAS': ['Si', 'No'],
-            'CERCA_COLEGIOS': ['Si', 'No'],
-            'CERCA_PARQUE': ['Si', 'No']
-        }
-
-        for col, values in categorical_mappings.items():
-            for value in values[1:]:
-                input_df[f"{col}_{value}"] = 1 if data[col] == value else 0
-
-        for col in ['proyecto', 'manzana', 'asesor', 'lote_ubicacion']:
-            if label_encoders.get(col) is not None:
-                try:
-                    input_df[f"{col}_encoded"] = label_encoders[col].transform([data[col]])[0]
-                except:
-                    input_df[f"{col}_encoded"] = 0
-
-        for col in columnas_modelo:
-            if col not in input_df.columns:
-                input_df[col] = 0
-
-        input_df = input_df[columnas_modelo]
-        numeric_cols = ['metros_cuadrados', 'monto_reserva', 'lote_precio_total',
-                       'tiempo_reserva_dias', 'SALARIO_DECLARADO', 'n_visitas',
-                       'ratio_reserva_precio', 'dias_hasta_limite', 'precio_m2']
-        numeric_cols = [col for col in numeric_cols if col in input_df.columns]
-        input_df[numeric_cols] = scaler.transform(input_df[numeric_cols])
-        return input_df
-    except Exception as e:
-        st.error(f"Error en preprocesamiento: {e}")
-        return None
-
-
-# --- Botón de predicción ---
-st.sidebar.markdown("---")
-if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
-    input_data = {
-        'proyecto': proyecto, 'manzana': manzana, 'lote_ubicacion': lote_ubicacion,
-        'metros_cuadrados': metros_cuadrados, 'lote_precio_total': lote_precio_total,
-        'monto_reserva': monto_reserva, 'tiempo_reserva_dias': tiempo_reserva_dias,
-        'dias_hasta_limite': dias_hasta_limite, 'metodo_pago': metodo_pago,
-        'cliente_edad': cliente_edad, 'cliente_genero': cliente_genero,
-        'cliente_profesion': cliente_profesion, 'cliente_distrito': cliente_distrito,
-        'SALARIO_DECLARADO': SALARIO_DECLARADO, 'n_visitas': n_visitas,
-        'canal_contacto': canal_contacto, 'asesor': asesor,
-        'promesa_regalo': promesa_regalo, 'DOCUMENTOS': DOCUMENTOS,
-        'CERCA_AVENIDAS': CERCA_AVENIDAS, 'CERCA_COLEGIOS': CERCA_COLEGIOS, 'CERCA_PARQUE': CERCA_PARQUE
-    }
-
-    processed_data = preprocess_input(input_data)
-
-    if processed_data is not None:
-        try:
-            probabilidad = model.predict_proba(processed_data)[0][1]
-            prediccion = model.predict(processed_data)[0]
-
-            st.success("✅ Predicción completada!")
-            col1, col2 = st.columns([1, 2])
-            with col1:
-                st.metric("Probabilidad de Compra", f"{probabilidad*100:.1f}%")
-                if probabilidad > 0.7:
-                    st.success("🎉 Alta probabilidad de compra")
-                elif probabilidad > 0.4:
-                    st.warning("⚠️ Probabilidad media de compra")
-                else:
-                    st.error("📉 Baja probabilidad de compra")
-            with col2:
-                st.progress(float(probabilidad))
-                st.caption(f"Confianza del modelo: {probabilidad*100:.1f}%")
-
-            # --- Guardar evaluación ---
-            if st.button("💾 Guardar Evaluación"):
-                if dni_cliente.strip() == "":
-                    st.warning("⚠️ Ingresa un DNI antes de guardar la evaluación.")
-                else:
-                    nuevo_registro = {
-                        "DNI": dni_cliente,
-                        "Proyecto": proyecto,
-                        "Asesor": asesor,
-                        "Probabilidad (%)": round(probabilidad * 100, 2),
-                        "Resultado": "Compra" if prediccion == 1 else "No Compra"
-                    }
-                    st.session_state.historial.append(nuevo_registro)
-                    pd.DataFrame(st.session_state.historial).to_csv("historial_predicciones.csv", index=False)
-                    st.success("💾 Evaluación guardada correctamente.")
-                    st.rerun()
-
-        except Exception as e:
-            st.error(f"Error en la predicción: {e}")
-
-# --- Mostrar historial ---
-if len(st.session_state.historial) > 0:
-    st.markdown("---")
-    st.subheader("📜 Historial de Evaluaciones Guardadas")
-    df_historial = pd.DataFrame(st.session_state.historial)
-    st.dataframe(df_historial, use_container_width=True)
-
-    csv = df_historial.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="⬇️ Descargar Historial en CSV",
-        data=csv,
-        file_name="historial_predicciones.csv",
-        mime="text/csv"
-    )
-
-# --- Información adicional ---
-st.header("📈 Análisis de Clientes")
-col1, col2, col3 = st.columns(3)
+# Campos de entrada
+st.subheader("📋 Información del Cliente")
+col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Total de Clientes", "100,000")
-    st.metric("Tasa de Conversión", "50%")
+    ingreso = st.number_input("💰 Ingreso mensual (S/)", min_value=0.0, value=2500.0)
 with col2:
-    st.metric("Mejor Proyecto", "PROYECTO_3")
-    st.metric("Asesor Top", "Asesor_15")
+    edad = st.number_input("🎂 Edad", min_value=18, value=35)
 with col3:
-    st.metric("Canal Más Efectivo", "EVENTO")
-    st.metric("Regalo Popular", "Cocina")
+    antiguedad = st.number_input("📆 Antigüedad laboral (años)", min_value=0, value=3)
+with col4:
+    cuota_inicial = st.number_input("🏦 Cuota inicial (%)", min_value=0, max_value=100, value=20)
 
-st.markdown("---")
-st.info("💡 **Recomendaciones:** Para aumentar la probabilidad de compra, considere montos de reserva más altos, documentación completa y seguimiento cercano del asesor.")
+# Botón de predicción
+if st.button("📊 Predecir Probabilidad"):
+    try:
+        datos = np.array([[ingreso, edad, antiguedad, cuota_inicial]])
+        datos_escalados = scaler.transform(datos)
+        probabilidad = modelo.predict_proba(datos_escalados)[0][1]
+        prediccion = modelo.predict(datos_escalados)[0]
 
+        st.markdown("---")
+        st.subheader("📈 Resultado de la Predicción")
+        st.metric("Probabilidad de Compra (%)", f"{probabilidad*100:.2f}")
+        st.write("🔍 Interpretación:", "Alta probabilidad de compra 🟢" if prediccion == 1 else "Baja probabilidad de compra 🔴")
+
+        # Botón para guardar la evaluación
+        if st.button("💾 Guardar Evaluación"):
+            if dni_cliente.strip() == "":
+                st.warning("⚠️ Ingresa un DNI antes de guardar la evaluación.")
+            else:
+                nuevo_registro = {
+                    "DNI": dni_cliente,
+                    "Ingreso": ingreso,
+                    "Edad": edad,
+                    "Antigüedad (años)": antiguedad,
+                    "Cuota Inicial (%)": cuota_inicial,
+                    "Probabilidad (%)": round(probabilidad * 100, 2),
+                    "Resultado": "Compra" if prediccion == 1 else "No Compra"
+                }
+                st.session_state.historial.append(nuevo_registro)
+                st.success("✅ Evaluación guardada correctamente.")
+
+                # Mostrar cuadro de historial debajo del botón
+                if len(st.session_state.historial) > 0:
+                    st.markdown("### 📜 Evaluaciones Realizadas Hasta el Momento")
+                    df_historial = pd.DataFrame(st.session_state.historial)
+                    st.dataframe(df_historial, use_container_width=True)
+
+                    # Botón para descargar CSV
+                    csv = df_historial.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="⬇️ Descargar Historial en CSV",
+                        data=csv,
+                        file_name="historial_predicciones.csv",
+                        mime="text/csv"
+                    )
+
+    except Exception as e:
+        st.error(f"⚠️ Error al realizar la predicción: {e}")
+
+# Mostrar historial general si existen registros
+if len(st.session_state.historial)_
