@@ -4,6 +4,7 @@ import numpy as np
 import joblib
 from sklearn.preprocessing import StandardScaler
 import os
+from datetime import datetime
 
 # Configuración de la página
 st.set_page_config(
@@ -16,11 +17,13 @@ st.set_page_config(
 st.title("🏠 Predictor de Probabilidad de Compra - Inmobiliaria")
 st.markdown("---")
 
+# Ruta del historial
+HISTORIAL_PATH = "historial.csv"
+
 # Cargar el modelo y preprocesadores
 @st.cache_resource
 def load_model():
     try:
-        # En Colab, los archivos están en el directorio actual
         model = joblib.load('mejor_modelo.pkl')
         scaler = joblib.load('scaler.pkl')
         columnas = joblib.load('columnas_modelo.pkl')
@@ -46,10 +49,12 @@ model, scaler, columnas_modelo, label_encoders = load_model()
 if model is None:
     st.stop()
 
+# ---------------------------
 # Sidebar para entrada de datos
+# ---------------------------
 st.sidebar.header("📋 Datos del Cliente y Propiedad")
 
-# Dividir en secciones
+# 1. Información del Proyecto
 st.sidebar.subheader("1. Información del Proyecto")
 
 proyecto = st.sidebar.selectbox(
@@ -69,6 +74,7 @@ lote_ubicacion = st.sidebar.selectbox(
      'UBICACION_6', 'UBICACION_7', 'UBICACION_8', 'UBICACION_9', 'UBICACION_10']
 )
 
+# 2. Características del Lote
 st.sidebar.subheader("2. Características del Lote")
 
 metros_cuadrados = st.sidebar.slider(
@@ -86,6 +92,7 @@ lote_precio_total = st.sidebar.selectbox(
      35000, 36000, 37000, 38000, 39000, 40000]
 )
 
+# 3. Información de Reserva
 st.sidebar.subheader("3. Información de Reserva")
 
 monto_reserva = st.sidebar.selectbox(
@@ -101,20 +108,31 @@ tiempo_reserva_dias = st.sidebar.slider(
     step=1
 )
 
-#dias_hasta_limite = st.sidebar.slider(
- #   "Días hasta Fecha Límite",
-  #  min_value=1,
-   # max_value=30,
-    #value=30,
-    #step=1
-#)
-
 metodo_pago = st.sidebar.selectbox(
     "Método de Pago",
     ['EFECTIVO', 'TARJETA', 'YAPE']
 )
 
+# 4. Información del Cliente
 st.sidebar.subheader("4. Información del Cliente")
+
+# DNI del Cliente con validación: solo dígitos, max 8
+cliente_dni = st.sidebar.text_input(
+    "DNI del Cliente (max 8 dígitos)",
+    value="",
+    max_chars=8,
+    help="Ingrese solo números. Máximo 8 dígitos."
+)
+
+# Validación simple del DNI (solo dígitos y longitud <= 8)
+dni_valido = True
+if cliente_dni:
+    if not cliente_dni.isdigit():
+        st.sidebar.error("El DNI debe contener solo dígitos.")
+        dni_valido = False
+    elif len(cliente_dni) > 8:
+        st.sidebar.error("El DNI debe tener como máximo 8 dígitos.")
+        dni_valido = False
 
 cliente_edad = st.sidebar.slider(
     "Edad del Cliente",
@@ -144,6 +162,7 @@ SALARIO_DECLARADO = st.sidebar.selectbox(
     [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000]
 )
 
+# 5. Comportamiento y Características
 st.sidebar.subheader("5. Comportamiento y Características")
 
 n_visitas = st.sidebar.slider(
@@ -174,6 +193,7 @@ DOCUMENTOS = st.sidebar.selectbox(
     ['Completo', 'Incompleto', 'Pendiente']
 )
 
+# 6. Ubicación y Amenities
 st.sidebar.subheader("6. Ubicación y Amenities")
 
 CERCA_AVENIDAS = st.sidebar.selectbox(
@@ -191,7 +211,9 @@ CERCA_PARQUE = st.sidebar.selectbox(
     ['Si', 'No']
 )
 
-# Función para preprocesar los datos de entrada
+# ---------------------------
+# Preprocesamiento
+# ---------------------------
 def preprocess_input(data):
     try:
         # Crear DataFrame
@@ -262,6 +284,8 @@ def preprocess_input(data):
 
         # Filtrar solo las que existen
         numeric_cols = [col for col in numeric_cols if col in input_df.columns]
+
+        # Evitar error si scaler no tiene la misma forma: asumimos que scaler fue entrenado con esas columnas
         input_df[numeric_cols] = scaler.transform(input_df[numeric_cols])
 
         return input_df
@@ -270,107 +294,194 @@ def preprocess_input(data):
         st.error(f"Error en preprocesamiento: {e}")
         return None
 
-# Botón de predicción
-st.sidebar.markdown("---")
-if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
-
-    # Recopilar todos los datos
-    input_data = {
-        'proyecto': proyecto,
-        'manzana': manzana,
-        'lote_ubicacion': lote_ubicacion,
-        'metros_cuadrados': metros_cuadrados,
-        'lote_precio_total': lote_precio_total,
-        'monto_reserva': monto_reserva,
-        'tiempo_reserva_dias': tiempo_reserva_dias,
-        #'dias_hasta_limite': dias_hasta_limite,
-        'metodo_pago': metodo_pago,
-        'cliente_edad': cliente_edad,
-        'cliente_genero': cliente_genero,
-        'cliente_profesion': cliente_profesion,
-        'cliente_distrito': cliente_distrito,
-        'SALARIO_DECLARADO': SALARIO_DECLARADO,
-        'n_visitas': n_visitas,
-        'canal_contacto': canal_contacto,
-        'asesor': asesor,
-        'promesa_regalo': promesa_regalo,
-        'DOCUMENTOS': DOCUMENTOS,
-        'CERCA_AVENIDAS': CERCA_AVENIDAS,
-        'CERCA_COLEGIOS': CERCA_COLEGIOS,
-        'CERCA_PARQUE': CERCA_PARQUE
-    }
-
-    # Preprocesar y predecir
-    processed_data = preprocess_input(input_data)
-
-    if processed_data is not None:
+# ---------------------------
+# Helpers para historial
+# ---------------------------
+def read_historial():
+    if os.path.exists(HISTORIAL_PATH):
         try:
-            # Hacer predicción
-            probabilidad = model.predict_proba(processed_data)[0][1]
-            prediccion = model.predict(processed_data)[0]
-
-            # Mostrar resultados
-            st.success("✅ Predicción completada!")
-
-            # Mostrar probabilidad con barra de progreso
-            col1, col2 = st.columns([1, 2])
-
-            with col1:
-                st.metric(
-                    label="Probabilidad de Compra",
-                    value=f"{probabilidad*100:.1f}%"
-                )
-
-                if probabilidad > 0.7:
-                    st.success("🎉 Alta probabilidad de compra")
-                elif probabilidad > 0.4:
-                    st.warning("⚠️ Probabilidad media de compra")
-                else:
-                    st.error("📉 Baja probabilidad de compra")
-
-            with col2:
-                st.progress(float(probabilidad))
-                st.caption(f"Confianza del modelo: {probabilidad*100:.1f}%")
-
-            # Mostrar detalles de la predicción
-            st.subheader("📊 Análisis de la Predicción")
-
-            col3, col4 = st.columns(2)
-
-            with col3:
-                st.info("**Factores Positivos:**")
-                if monto_reserva >= 2000:
-                    st.write("✅ Monto de reserva alto")
-                if n_visitas >= 3:
-                    st.write("✅ Múltiples visitas")
-                if DOCUMENTOS == 'Completo':
-                    st.write("✅ Documentación completa")
-                if SALARIO_DECLARADO >= 3000:
-                    st.write("✅ Buen nivel de ingresos")
-                if tiempo_reserva_dias <= 30:
-                    st.write("✅ Tiempo de reserva promedio")
-                if CERCA_AVENIDAS == 'Si':
-                    st.write("✅ Cerca de avenidas")
-
-            with col4:
-                st.warning("**Factores de Riesgo:**")
-                if monto_reserva < 1000:
-                    st.write("❌ Monto de reserva bajo")
-                if monto_reserva >= 1000 and monto_reserva < 2000:
-                    st.write("❌ Monto de reserva medio")
-                if n_visitas <= 2:
-                    st.write("❌ Pocas visitas")
-                if DOCUMENTOS == 'Incompleto':
-                    st.write("❌ Documentación incompleta")
-                if tiempo_reserva_dias >= 31:
-                    st.write("❌ Tiempo de reserva muy largo")
-                if SALARIO_DECLARADO < 3000:
-                    st.write("❌ Bajo nivel de ingresos")
-
+            df = pd.read_csv(HISTORIAL_PATH)
+            return df
         except Exception as e:
-            st.error(f"Error en la predicción: {e}")
+            st.error(f"No se pudo leer {HISTORIAL_PATH}: {e}")
+            return pd.DataFrame()
+    else:
+        return pd.DataFrame()
 
+def save_to_historial(row: dict):
+    df_row = pd.DataFrame([row])
+    if os.path.exists(HISTORIAL_PATH):
+        df_row.to_csv(HISTORIAL_PATH, mode='a', header=False, index=False)
+    else:
+        df_row.to_csv(HISTORIAL_PATH, index=False)
+
+# ---------------------------
+# Botón de predicción
+# ---------------------------
+st.sidebar.markdown("---")
+
+# Si DNI inválido, desactivar predicción mostrando botón deshabilitado (mensaje)
+if not dni_valido:
+    st.sidebar.warning("Corrija el DNI antes de predecir.")
+    st.sidebar.button("🎯 Predecir Probabilidad de Compra (desactivado)", disabled=True)
+else:
+    if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
+        # Recopilar todos los datos
+        input_data = {
+            'proyecto': proyecto,
+            'manzana': manzana,
+            'lote_ubicacion': lote_ubicacion,
+            'metros_cuadrados': metros_cuadrados,
+            'lote_precio_total': lote_precio_total,
+            'monto_reserva': monto_reserva,
+            'tiempo_reserva_dias': tiempo_reserva_dias,
+            # 'dias_hasta_limite': dias_hasta_limite,  # Si lo usas, reactivar
+            'metodo_pago': metodo_pago,
+            'cliente_edad': cliente_edad,
+            'cliente_genero': cliente_genero,
+            'cliente_profesion': cliente_profesion,
+            'cliente_distrito': cliente_distrito,
+            'SALARIO_DECLARADO': SALARIO_DECLARADO,
+            'n_visitas': n_visitas,
+            'canal_contacto': canal_contacto,
+            'asesor': asesor,
+            'promesa_regalo': promesa_regalo,
+            'DOCUMENTOS': DOCUMENTOS,
+            'CERCA_AVENIDAS': CERCA_AVENIDAS,
+            'CERCA_COLEGIOS': CERCA_COLEGIOS,
+            'CERCA_PARQUE': CERCA_PARQUE
+        }
+
+        # Preprocesar y predecir
+        processed_data = preprocess_input(input_data)
+
+        if processed_data is not None:
+            try:
+                # Hacer predicción
+                probabilidad = model.predict_proba(processed_data)[0][1]
+                prediccion = int(model.predict(processed_data)[0])
+
+                # Guardar últimos datos en session_state para posibilidad de guardar la evaluación
+                st.session_state['last_eval'] = {
+                    'input_data': input_data,
+                    'probabilidad': float(probabilidad),
+                    'prediccion': prediccion,
+                    'cliente_dni': cliente_dni,
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+
+                # Mostrar resultados
+                st.success("✅ Predicción completada!")
+
+                # Mostrar probabilidad con barra de progreso
+                col1, col2 = st.columns([1, 2])
+
+                with col1:
+                    st.metric(
+                        label="Probabilidad de Compra",
+                        value=f"{probabilidad*100:.1f}%"
+                    )
+
+                    if probabilidad > 0.7:
+                        st.success("🎉 Alta probabilidad de compra")
+                    elif probabilidad > 0.4:
+                        st.warning("⚠️ Probabilidad media de compra")
+                    else:
+                        st.error("📉 Baja probabilidad de compra")
+
+                with col2:
+                    st.progress(float(probabilidad))
+                    st.caption(f"Confianza del modelo: {probabilidad*100:.1f}%")
+
+                # Mostrar detalles de la predicción
+                st.subheader("📊 Análisis de la Predicción")
+
+                col3, col4 = st.columns(2)
+
+                with col3:
+                    st.info("**Factores Positivos:**")
+                    if monto_reserva >= 2000:
+                        st.write("✅ Monto de reserva alto")
+                    if n_visitas >= 3:
+                        st.write("✅ Múltiples visitas")
+                    if DOCUMENTOS == 'Completo':
+                        st.write("✅ Documentación completa")
+                    if SALARIO_DECLARADO >= 3000:
+                        st.write("✅ Buen nivel de ingresos")
+                    if tiempo_reserva_dias <= 30:
+                        st.write("✅ Tiempo de reserva promedio")
+                    if CERCA_AVENIDAS == 'Si':
+                        st.write("✅ Cerca de avenidas")
+
+                with col4:
+                    st.warning("**Factores de Riesgo:**")
+                    if monto_reserva < 1000:
+                        st.write("❌ Monto de reserva bajo")
+                    if monto_reserva >= 1000 and monto_reserva < 2000:
+                        st.write("❌ Monto de reserva medio")
+                    if n_visitas <= 2:
+                        st.write("❌ Pocas visitas")
+                    if DOCUMENTOS == 'Incompleto':
+                        st.write("❌ Documentación incompleta")
+                    if tiempo_reserva_dias >= 31:
+                        st.write("❌ Tiempo de reserva muy largo")
+                    if SALARIO_DECLARADO < 3000:
+                        st.write("❌ Bajo nivel de ingresos")
+
+                # Mostrar botón para guardar evaluación solo después de predecir
+                st.markdown("---")
+                st.subheader("💾 Guardar Evaluación")
+                col_save1, col_save2 = st.columns([1, 4])
+
+                with col_save1:
+                    if st.button("💾 Guardar Evaluación"):
+                        last = st.session_state.get('last_eval', None)
+                        if last is None:
+                            st.error("No hay evaluación para guardar.")
+                        else:
+                            # Construir fila a guardar (aplanar input_data)
+                            row = {
+                                "timestamp": last['timestamp'],
+                                "cliente_dni": last['cliente_dni'],
+                                "probabilidad": last['probabilidad'],
+                                "prediccion": last['prediccion']
+                            }
+                            # Añadir todos los campos de input_data al row
+                            for k, v in last['input_data'].items():
+                                row[k] = v
+
+                            try:
+                                save_to_historial(row)
+                                st.success("✅ Evaluación guardada en historial.")
+                            except Exception as e:
+                                st.error(f"No se pudo guardar la evaluación: {e}")
+
+                # Mostrar historial actualizado
+                st.markdown("---")
+                st.subheader("📚 Historial de Predicciones")
+
+                historial_df = read_historial()
+                if historial_df.empty:
+                    st.info("No hay registros en el historial todavía.")
+                else:
+                    # Mostrar tabla (últimas 25 filas)
+                    st.dataframe(historial_df.sort_values(by="timestamp", ascending=False).reset_index(drop=True))
+
+                    # Botón de descarga
+                    csv_bytes = historial_df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="📥 Descargar Historial",
+                        data=csv_bytes,
+                        file_name="historial_predicciones.csv",
+                        mime="text/csv"
+                    )
+
+            except Exception as e:
+                st.error(f"Error en la predicción: {e}")
+
+# ---------------------------
 # Información adicional en el main
+# ---------------------------
 st.header("📈 Análisis de Clientes")
 
 col1, col2, col3 = st.columns(3)
@@ -389,3 +500,22 @@ with col3:
 
 st.markdown("---")
 st.info("💡 **Recomendaciones:** Para aumentar la probabilidad de compra, considere montos de reserva más altos, documentación completa y seguimiento cercano del asesor.")
+
+# ---------------------------
+# Mostrar historial también en la parte inferior (persistente)
+# ---------------------------
+st.markdown("---")
+st.subheader("📚 Historial Acumulado de Predicciones")
+
+historial_df = read_historial()
+if historial_df.empty:
+    st.info("No hay registros en el historial todavía.")
+else:
+    st.dataframe(historial_df.sort_values(by="timestamp", ascending=False).reset_index(drop=True))
+    csv_bytes = historial_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Descargar Historial",
+        data=csv_bytes,
+        file_name="historial_predicciones.csv",
+        mime="text/csv"
+    )
