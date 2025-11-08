@@ -322,6 +322,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 if tiempo_reserva_dias >= 31: st.write("❌ Tiempo de reserva muy largo")
                 if SALARIO_DECLARADO < 3000: st.write("❌ Bajo nivel de ingresos")
 
+            archivo_csv = "evaluaciones_clientes.csv"
             # 🆕 Botón para guardar evaluación
             #if st.button("💾 Guardar Evaluación"):
             #    nuevo_registro = {
