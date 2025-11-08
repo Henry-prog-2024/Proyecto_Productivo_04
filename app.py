@@ -16,11 +16,14 @@ st.set_page_config(
 st.title("🏠 Predictor de Probabilidad de Compra - Inmobiliaria")
 st.markdown("---")
 
-# Inicializar historial en sesión
+# --- Inicializar historial en sesión y archivo ---
 if "historial" not in st.session_state:
-    st.session_state.historial = []
+    if os.path.exists("historial_predicciones.csv"):
+        st.session_state.historial = pd.read_csv("historial_predicciones.csv").to_dict('records')
+    else:
+        st.session_state.historial = []
 
-# Cargar el modelo y preprocesadores
+# --- Cargar modelo y recursos ---
 @st.cache_resource
 def load_model():
     try:
@@ -42,168 +45,60 @@ def load_model():
         st.info("Asegúrate de tener todos los archivos .pkl en el directorio actual")
         return None, None, None, None
 
-# Cargar recursos
 model, scaler, columnas_modelo, label_encoders = load_model()
-
 if model is None:
     st.stop()
 
-# Sidebar para entrada de datos
+# --- Sidebar ---
 st.sidebar.header("📋 Datos del Cliente y Propiedad")
 
-# 🆕 Campo de DNI del cliente
 dni_cliente = st.sidebar.text_input("🪪 DNI del Cliente", max_chars=8)
 
-# Dividir en secciones
 st.sidebar.subheader("1. Información del Proyecto")
-
-proyecto = st.sidebar.selectbox(
-    "Proyecto",
-    ['PROYECTO_1', 'PROYECTO_2', 'PROYECTO_3', 'PROYECTO_4', 'PROYECTO_5',
-     'PROYECTO_6', 'PROYECTO_7', 'PROYECTO_8', 'PROYECTO_9', 'PROYECTO_10']
-)
-
-manzana = st.sidebar.selectbox(
-    "Manzana",
-    ['Mz-A', 'Mz-B', 'Mz-C', 'Mz-D', 'Mz-E']
-)
-
-lote_ubicacion = st.sidebar.selectbox(
-    "Ubicación del Lote",
-    ['UBICACION_1', 'UBICACION_2', 'UBICACION_3', 'UBICACION_4', 'UBICACION_5',
-     'UBICACION_6', 'UBICACION_7', 'UBICACION_8', 'UBICACION_9', 'UBICACION_10']
-)
+proyecto = st.sidebar.selectbox("Proyecto", [f'PROYECTO_{i}' for i in range(1, 11)])
+manzana = st.sidebar.selectbox("Manzana", ['Mz-A', 'Mz-B', 'Mz-C', 'Mz-D', 'Mz-E'])
+lote_ubicacion = st.sidebar.selectbox("Ubicación del Lote", [f'UBICACION_{i}' for i in range(1, 11)])
 
 st.sidebar.subheader("2. Características del Lote")
-
-metros_cuadrados = st.sidebar.slider(
-    "Metros Cuadrados",
-    min_value=80,
-    max_value=200,
-    value=140,
-    step=5
-)
-
-lote_precio_total = st.sidebar.selectbox(
-    "Precio Total del Lote ($)",
-    [15000, 16000, 17000, 18000, 19000, 20000, 21000, 22000, 23000, 24000,
-     25000, 26000, 27000, 28000, 29000, 30000, 31000, 32000, 33000, 34000,
-     35000, 36000, 37000, 38000, 39000, 40000]
-)
+metros_cuadrados = st.sidebar.slider("Metros Cuadrados", 80, 200, 140, 5)
+lote_precio_total = st.sidebar.selectbox("Precio Total del Lote ($)", list(range(15000, 41000, 1000)))
 
 st.sidebar.subheader("3. Información de Reserva")
-
-monto_reserva = st.sidebar.selectbox(
-    "Monto de Reserva ($)",
-    [500, 600, 800, 900, 1000,2000,5000,10000]
-)
-
-tiempo_reserva_dias = st.sidebar.slider(
-    "Tiempo de Reserva (días)",
-    min_value=1,
-    max_value=90,
-    value=7,
-    step=1
-)
-
-dias_hasta_limite = st.sidebar.slider(
-    "Días hasta Fecha Límite",
-    min_value=1,
-    max_value=90,
-    value=30,
-    step=1
-)
-
-metodo_pago = st.sidebar.selectbox(
-    "Método de Pago",
-    ['EFECTIVO', 'TARJETA', 'YAPE']
-)
+monto_reserva = st.sidebar.selectbox("Monto de Reserva ($)", [500, 600, 800, 900, 1000, 2000, 5000, 10000])
+tiempo_reserva_dias = st.sidebar.slider("Tiempo de Reserva (días)", 1, 90, 7)
+dias_hasta_limite = st.sidebar.slider("Días hasta Fecha Límite", 1, 90, 30)
+metodo_pago = st.sidebar.selectbox("Método de Pago", ['EFECTIVO', 'TARJETA', 'YAPE'])
 
 st.sidebar.subheader("4. Información del Cliente")
-
-cliente_edad = st.sidebar.slider(
-    "Edad del Cliente",
-    min_value=25,
-    max_value=70,
-    value=45,
-    step=1
-)
-
-cliente_genero = st.sidebar.selectbox(
-    "Género del Cliente",
-    ['M', 'F']
-)
-
+cliente_edad = st.sidebar.slider("Edad del Cliente", 25, 70, 45)
+cliente_genero = st.sidebar.selectbox("Género del Cliente", ['M', 'F'])
 cliente_profesion = st.sidebar.selectbox(
     "Profesión del Cliente",
     ['Ingeniero', 'Doctor', 'Abogado', 'Docente', 'Comerciante', 'Empresario', 'Otro']
 )
-
-cliente_distrito = st.sidebar.selectbox(
-    "Distrito del Cliente",
-    ['Distrito_A', 'Distrito_B', 'Distrito_C', 'Distrito_D', 'Distrito_E']
-)
-
-SALARIO_DECLARADO = st.sidebar.selectbox(
-    "Salario Aproximado ($)",
-    [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000]
-)
+cliente_distrito = st.sidebar.selectbox("Distrito del Cliente", ['Distrito_A', 'Distrito_B', 'Distrito_C', 'Distrito_D', 'Distrito_E'])
+SALARIO_DECLARADO = st.sidebar.selectbox("Salario Aproximado ($)", [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000])
 
 st.sidebar.subheader("5. Comportamiento y Características")
-
-n_visitas = st.sidebar.slider(
-    "Número de Visitas",
-    min_value=0,
-    max_value=5,
-    value=2,
-    step=1
-)
-
-canal_contacto = st.sidebar.selectbox(
-    "Canal de Contacto",
-    ['EVENTO', 'FACEBOOK', 'PAGINA WEB', 'WHATSAPP', 'INSTAGRAM', 'VOLANTES']
-)
-
-asesor = st.sidebar.selectbox(
-    "Asesor",
-    [f"Asesor_{i}" for i in range(1, 101)]
-)
-
-promesa_regalo = st.sidebar.selectbox(
-    "Promesa de Regalo",
-    ['Ninguno', 'Cocina', 'Refrigeradora', 'TV', 'Lavadora']
-)
-
-DOCUMENTOS = st.sidebar.selectbox(
-    "Estado de Documentos",
-    ['Completo', 'Incompleto', 'Pendiente']
-)
+n_visitas = st.sidebar.slider("Número de Visitas", 0, 5, 2)
+canal_contacto = st.sidebar.selectbox("Canal de Contacto", ['EVENTO', 'FACEBOOK', 'PAGINA WEB', 'WHATSAPP', 'INSTAGRAM', 'VOLANTES'])
+asesor = st.sidebar.selectbox("Asesor", [f"Asesor_{i}" for i in range(1, 101)])
+promesa_regalo = st.sidebar.selectbox("Promesa de Regalo", ['Ninguno', 'Cocina', 'Refrigeradora', 'TV', 'Lavadora'])
+DOCUMENTOS = st.sidebar.selectbox("Estado de Documentos", ['Completo', 'Incompleto', 'Pendiente'])
 
 st.sidebar.subheader("6. Ubicación y Amenities")
+CERCA_AVENIDAS = st.sidebar.selectbox("Cerca de Avenidas", ['Si', 'No'])
+CERCA_COLEGIOS = st.sidebar.selectbox("Cerca de Colegios", ['Si', 'No'])
+CERCA_PARQUE = st.sidebar.selectbox("Cerca de Parques", ['Si', 'No'])
 
-CERCA_AVENIDAS = st.sidebar.selectbox(
-    "Cerca de Avenidas",
-    ['Si', 'No']
-)
-
-CERCA_COLEGIOS = st.sidebar.selectbox(
-    "Cerca de Colegios",
-    ['Si', 'No']
-)
-
-CERCA_PARQUE = st.sidebar.selectbox(
-    "Cerca de Parques",
-    ['Si', 'No']
-)
-
-# --- Función de preprocesamiento (sin cambios del código original) ---
+# --- Preprocesamiento ---
 def preprocess_input(data):
     try:
         input_df = pd.DataFrame([data])
-
         input_df['ratio_reserva_precio'] = input_df['monto_reserva'] / input_df['lote_precio_total']
         input_df['precio_m2'] = input_df['lote_precio_total'] / input_df['metros_cuadrados']
 
+        # Edad categórica
         if input_df['cliente_edad'].iloc[0] <= 35:
             input_df['cliente_edad_cat_36-45'] = 0
             input_df['cliente_edad_cat_46-55'] = 0
@@ -250,46 +145,31 @@ def preprocess_input(data):
                 input_df[col] = 0
 
         input_df = input_df[columnas_modelo]
-
         numeric_cols = ['metros_cuadrados', 'monto_reserva', 'lote_precio_total',
                        'tiempo_reserva_dias', 'SALARIO_DECLARADO', 'n_visitas',
                        'ratio_reserva_precio', 'dias_hasta_limite', 'precio_m2']
         numeric_cols = [col for col in numeric_cols if col in input_df.columns]
         input_df[numeric_cols] = scaler.transform(input_df[numeric_cols])
-
         return input_df
     except Exception as e:
         st.error(f"Error en preprocesamiento: {e}")
         return None
 
 
-# --- BOTÓN DE PREDICCIÓN ---
+# --- Botón de predicción ---
 st.sidebar.markdown("---")
 if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
-
     input_data = {
-        'proyecto': proyecto,
-        'manzana': manzana,
-        'lote_ubicacion': lote_ubicacion,
-        'metros_cuadrados': metros_cuadrados,
-        'lote_precio_total': lote_precio_total,
-        'monto_reserva': monto_reserva,
-        'tiempo_reserva_dias': tiempo_reserva_dias,
-        'dias_hasta_limite': dias_hasta_limite,
-        'metodo_pago': metodo_pago,
-        'cliente_edad': cliente_edad,
-        'cliente_genero': cliente_genero,
-        'cliente_profesion': cliente_profesion,
-        'cliente_distrito': cliente_distrito,
-        'SALARIO_DECLARADO': SALARIO_DECLARADO,
-        'n_visitas': n_visitas,
-        'canal_contacto': canal_contacto,
-        'asesor': asesor,
-        'promesa_regalo': promesa_regalo,
-        'DOCUMENTOS': DOCUMENTOS,
-        'CERCA_AVENIDAS': CERCA_AVENIDAS,
-        'CERCA_COLEGIOS': CERCA_COLEGIOS,
-        'CERCA_PARQUE': CERCA_PARQUE
+        'proyecto': proyecto, 'manzana': manzana, 'lote_ubicacion': lote_ubicacion,
+        'metros_cuadrados': metros_cuadrados, 'lote_precio_total': lote_precio_total,
+        'monto_reserva': monto_reserva, 'tiempo_reserva_dias': tiempo_reserva_dias,
+        'dias_hasta_limite': dias_hasta_limite, 'metodo_pago': metodo_pago,
+        'cliente_edad': cliente_edad, 'cliente_genero': cliente_genero,
+        'cliente_profesion': cliente_profesion, 'cliente_distrito': cliente_distrito,
+        'SALARIO_DECLARADO': SALARIO_DECLARADO, 'n_visitas': n_visitas,
+        'canal_contacto': canal_contacto, 'asesor': asesor,
+        'promesa_regalo': promesa_regalo, 'DOCUMENTOS': DOCUMENTOS,
+        'CERCA_AVENIDAS': CERCA_AVENIDAS, 'CERCA_COLEGIOS': CERCA_COLEGIOS, 'CERCA_PARQUE': CERCA_PARQUE
     }
 
     processed_data = preprocess_input(input_data)
@@ -300,7 +180,6 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
             prediccion = model.predict(processed_data)[0]
 
             st.success("✅ Predicción completada!")
-
             col1, col2 = st.columns([1, 2])
             with col1:
                 st.metric("Probabilidad de Compra", f"{probabilidad*100:.1f}%")
@@ -314,28 +193,7 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                 st.progress(float(probabilidad))
                 st.caption(f"Confianza del modelo: {probabilidad*100:.1f}%")
 
-            st.subheader("📊 Análisis de la Predicción")
-
-            col3, col4 = st.columns(2)
-            with col3:
-                st.info("**Factores Positivos:**")
-                if monto_reserva >= 2000: st.write("✅ Monto de reserva alto")
-                if n_visitas >= 3: st.write("✅ Múltiples visitas")
-                if DOCUMENTOS == 'Completo': st.write("✅ Documentación completa")
-                if SALARIO_DECLARADO >= 3000: st.write("✅ Buen nivel de ingresos")
-                if tiempo_reserva_dias <= 30: st.write("✅ Tiempo de reserva promedio")
-                if CERCA_AVENIDAS == 'Si': st.write("✅ Cerca de avenidas")
-
-            with col4:
-                st.warning("**Factores de Riesgo:**")
-                if monto_reserva < 1000: st.write("❌ Monto de reserva bajo")
-                if monto_reserva >= 1000 and monto_reserva < 2000: st.write("❌ Monto de reserva medio")
-                if n_visitas <= 2: st.write("❌ Pocas visitas")
-                if DOCUMENTOS == 'Incompleto': st.write("❌ Documentación incompleta")
-                if tiempo_reserva_dias >= 31: st.write("❌ Tiempo de reserva muy largo")
-                if SALARIO_DECLARADO < 3000: st.write("❌ Bajo nivel de ingresos")
-
-            # 🆕 Botón para guardar evaluación
+            # --- Guardar evaluación ---
             if st.button("💾 Guardar Evaluación"):
                 if dni_cliente.strip() == "":
                     st.warning("⚠️ Ingresa un DNI antes de guardar la evaluación.")
@@ -344,40 +202,24 @@ if st.sidebar.button("🎯 Predecir Probabilidad de Compra", type="primary"):
                         "DNI": dni_cliente,
                         "Proyecto": proyecto,
                         "Asesor": asesor,
-                        "Probabilidad (%)": round(probabilidad*100, 2),
+                        "Probabilidad (%)": round(probabilidad * 100, 2),
                         "Resultado": "Compra" if prediccion == 1 else "No Compra"
                     }
                     st.session_state.historial.append(nuevo_registro)
+                    pd.DataFrame(st.session_state.historial).to_csv("historial_predicciones.csv", index=False)
                     st.success("💾 Evaluación guardada correctamente.")
-
-                    # Mostrar cuadro de historial actualizado inmediatamente
-                    if len(st.session_state.historial) > 0:
-                        st.markdown("---")
-                        st.subheader("📜 Historial de Evaluaciones Recientes")
-                        df_historial = pd.DataFrame(st.session_state.historial)
-                        st.dataframe(df_historial, use_container_width=True)
-
-                        # Botón de descarga CSV
-                        csv = df_historial.to_csv(index=False).encode('utf-8')
-                        st.download_button(
-                            label="⬇️ Descargar Historial en CSV",
-                            data=csv,
-                            file_name="historial_predicciones.csv",
-                            mime="text/csv"
-                        )
-
+                    st.rerun()
 
         except Exception as e:
             st.error(f"Error en la predicción: {e}")
 
-# 🆕 Mostrar historial de predicciones
+# --- Mostrar historial ---
 if len(st.session_state.historial) > 0:
     st.markdown("---")
-    st.subheader("📜 Historial de Evaluaciones Recientes")
+    st.subheader("📜 Historial de Evaluaciones Guardadas")
     df_historial = pd.DataFrame(st.session_state.historial)
     st.dataframe(df_historial, use_container_width=True)
 
-    # Botón de descarga CSV
     csv = df_historial.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="⬇️ Descargar Historial en CSV",
@@ -386,7 +228,7 @@ if len(st.session_state.historial) > 0:
         mime="text/csv"
     )
 
-# Información adicional en el main
+# --- Información adicional ---
 st.header("📈 Análisis de Clientes")
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -401,3 +243,4 @@ with col3:
 
 st.markdown("---")
 st.info("💡 **Recomendaciones:** Para aumentar la probabilidad de compra, considere montos de reserva más altos, documentación completa y seguimiento cercano del asesor.")
+
